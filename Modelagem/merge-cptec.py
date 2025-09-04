@@ -2,6 +2,11 @@
 
 !pip install pygrib cartopy ipywidgets
 
+
+#RODAR A POS A INSTALAÇÃO DA BIBLIOTECA
+# MARGE CPTEC - Elaboração de Mapa para o NEB e PB
+
+
 import os
 import requests
 import numpy as np
@@ -70,8 +75,8 @@ def salvar_e_exibir_mapa(nome_arquivo, lons, lats, data, extent, levels, cmap, n
     gl.right_labels = False
     gl.left_labels = True
     gl.bottom_labels = True
-    gl.xlabel_style = {'size': 7}
-    gl.ylabel_style = {'size': 7}
+    gl.xlabel_style = {'size': 5} #tamanho da long
+    gl.ylabel_style = {'size': 5} #tamanho da lat
 
     # Precipitação
     cs = ax.contourf(lons, lats, data, levels=levels, cmap=cmap, norm=norm, transform=ccrs.PlateCarree())
@@ -79,11 +84,11 @@ def salvar_e_exibir_mapa(nome_arquivo, lons, lats, data, extent, levels, cmap, n
     # Ajuste dinâmico da fonte do título direito baseado no comprimento do título esquerdo
     tamanho_esquerdo = len("MERGE - Precipitação Acumulada") + len(titulo_periodo)
     fonte_direita = 9
-    if tamanho_esquerdo > 35:
+    if tamanho_esquerdo > 10:
         fonte_direita = 7.5  # diminui fonte se texto da esquerda for muito longo
 
-    # Posicionamento dos títulos (subindo um pouco mais)
-    y_titulo = 1.05  # subiu 0.02 a mais (antes 1.03)
+    # Posicionamento dos títulos
+    y_titulo = 1.05  # pra não colar com a grade
 
     ax.text(0.01, y_titulo, "MERGE - Precipitação Acumulada", transform=ax.transAxes,
             ha='left', fontsize=8.5, fontweight='bold')
@@ -98,7 +103,7 @@ def salvar_e_exibir_mapa(nome_arquivo, lons, lats, data, extent, levels, cmap, n
     ax.text(0.99, 0.01, "Fonte: CPTEC\nElaboração: Edivan Silva", transform=ax.transAxes,
             ha='right', va='bottom', fontsize=6, alpha=0.6)
 
-    # Legenda horizontal ajustada
+    # Legenda horizontal ajustada pra não bugar e sobrepor
     pos = ax.get_position()
     cbar_ax = fig.add_axes([pos.x0, pos.y0 - 0.06, pos.width, 0.02])  # afastada do mapa
     cbar = fig.colorbar(cs, cax=cbar_ax, orientation='horizontal', ticks=levels)
@@ -114,7 +119,7 @@ def salvar_e_exibir_mapa(nome_arquivo, lons, lats, data, extent, levels, cmap, n
 
 
 
-# Função principal
+# Função principal para geração dos mapas :) 
 def gerar_3_mapas_precipitacao(dates):
     clear_output(wait=True)
     download_grib_files(dates)
@@ -167,7 +172,7 @@ def gerar_3_mapas_precipitacao(dates):
                          [-38.7423, -34.8096, -8.3005, -6.0336], levels, cmap, norm,
                          "Paraíba", titulo_periodo)
 
-    print("✅ Mapas salvos em 'MAPAS_SAIDA/' e exibidos abaixo.")
+    print("Mapas salvos em 'MAPAS_SAIDA/' e exibidos abaixo.")
 
 # === BLOCO INTERATIVO COM WIDGETS ===
 data_ontem = datetime.today() - timedelta(days=1)
@@ -180,17 +185,26 @@ output = widgets.Output()
 def on_gerar_click(b):
     with output:
         clear_output()
-        if not start_date.value or not end_date.value:
-            print("⚠️ Por favor, selecione as duas datas.")
+        
+        start = start_date.value
+        end = end_date.value
+
+        # Converte para datetime.date se necessário
+        start = start.date() if isinstance(start, datetime) else start
+        end = end.date() if isinstance(end, datetime) else end
+
+        if not start or not end:
+            print("Por favor, selecione as duas datas.")
             return
-        if start_date.value > end_date.value:
-            print("⚠️ Data início deve ser anterior ou igual à data fim.")
+        if start > end:
+            print("Data início deve ser anterior ou igual à data fim.")
             return
-        dates = get_date_list(start_date.value, end_date.value)
+
+        dates = get_date_list(start, end)
         gerar_3_mapas_precipitacao(dates)
+
 
 btn_gerar.on_click(on_gerar_click)
 
 display(widgets.HBox([start_date, end_date, btn_gerar]), output)
-
 
