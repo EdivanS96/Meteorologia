@@ -2,11 +2,7 @@
 
 !pip install pygrib cartopy ipywidgets
 
-
 #RODAR A POS A INSTALAÇÃO DA BIBLIOTECA
-# MARGE CPTEC - Elaboração de Mapa para o NEB e PB
-
-
 import os
 import requests
 import numpy as np
@@ -207,4 +203,5 @@ def on_gerar_click(b):
 btn_gerar.on_click(on_gerar_click)
 
 display(widgets.HBox([start_date, end_date, btn_gerar]), output)
+
 
