@@ -1,0 +1,44 @@
+//MONITORAMENTO MENSAL DO NDVI NO ESTADO DA PARAIBA
+
+//AREA DE ESTUDO
+var NEB = ee.FeatureCollection('users/EdivanS/NEB')
+  .filter(ee.Filter.eq('SIGLA', 'PB'));
+ 
+// Carregar a coleção de imagens e aplicar filtros de data e região (MYD13A2 - Sat -AQUA)
+var collection1 = ee.ImageCollection("MODIS/061/MYD13A2")
+  .filterDate('2023-09-01', '2023-09-30')
+  .filterBounds(NEB)
+  .select('NDVI');
+
+
+// Converter os valores do NDVI e manter as propriedades de tempo
+var data = collection1.map(function(image) {
+  return image.multiply(0.0001).copyProperties(image, ["system:time_start"]);
+});
+
+// Calcular a média do NDVI
+var sum = data.select('NDVI').mean();
+
+// Cortar a imagem para o contorno da área de estudo
+var clip = sum.clipToCollection(NEB);
+
+// Adicionar a camada de NDVI ao mapa
+Map.addLayer(clip, {
+  min: 0.0,
+  max: 1.0,
+  palette: ['d73027', 'f46d43', 'fdae61', 'ffffbf', 'a6d96a', '66bd63', '1a9850']
+}, 'NDVI');
+
+// Centralizar o mapa na Paraíba
+Map.centerObject(NEB, 8);
+
+// Definir contorno da área de estudo
+var empty = ee.Image().byte();
+var outline = empty.paint({
+  featureCollection: NEB,
+  color: 1,
+  width: 5
+});
+
+// Adicionar o contorno da área ao mapa
+Map.addLayer(outline, {palette: '#000000'}, 'Área de estudo', 1);
