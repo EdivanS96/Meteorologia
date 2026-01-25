@@ -1,0 +1,23 @@
+# Para manipulação de dados
+pandas>=1.5.0
+numpy>=1.23.0
+
+# Para gráficos (usado no primeiro notebook)
+matplotlib>=3.7.0
+
+# Leitura de arquivos .rar
+rarfile>=4.0
+
+# Google Colab
+google-colab>=1.0
+
+# Google Earth Engine e geemap
+earthengine-api>=0.1.336
+geemap>=0.24.0
+folium>=0.14.0
+
+# Scikit-learn para regressão e métricas
+scikit-learn>=1.2.0
+
+# SciPy para correlação de Pearson
+scipy>=1.10.0
