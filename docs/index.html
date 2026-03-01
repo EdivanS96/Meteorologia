@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edivan Silva | Meteorologia UFCG</title>
+    
+    <link rel="icon" type="image/png" href="docs/IconeV2.png">
+    <meta name="description" content="Edivan Silva - Graduando em Meteorologia (UFCG) com foco em soluções baseadas em dados e geotecnologias.">
+    <meta property="og:title" content="Edivan Silva | Meteorologia UFCG">
+    <meta property="og:description" content="Confira meus produtos técnicos e trajetória no monitoramento climático.">
+    <meta property="og:image" content="docs/IconeV2.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <canvas id="windCanvas"></canvas>
+    <nav>
+        <a href="#" class="logo-box">
+            <img src="docs/IconeV2.png" alt="Logo Edivan" class="logo-img">
+            <span class="logo-text">EDIVAN SILVA DOS SANTOS</span>
+        </a>
+        <div class="nav-menu">
+            <a href="#produtos" class="nav-link-item">PRODUTOS</a>
+            <a href="#tecnologias" class="nav-link-item">TECNOLOGIAS</a>
+            <a href="https://lattes.cnpq.br/2690669771522466" target="_blank" class="nav-icons"><i class="fas fa-file-invoice"></i></a>
+            <a href="https://github.com/EdivanS96" target="_blank" class="nav-icons"><i class="fab fa-github"></i></a>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <div class="hero-content">
+            <span class="tag">GRADUANDO EM METEOROLOGIA | UFCG</span>
+            <h1>Meteorologia e <span>Sensoriamento Remoto</span></h1>
+            <p>Experiência em pesquisa e extensão, com monitoramento climático, análise de dados de precipitação e estudo da vegetação via satélite, contribuindo para relatórios e mapas técnicos.</p>
+            <div class="btn-group">
+                <a href="#produtos" class="btn btn-primary">Ver Produtos Técnicos</a>
+                <a href="https://lattes.cnpq.br/2690669771522466" target="_blank" class="btn btn-outline">Currículo Lattes</a>
+            </div>
+        </div>
+        <div class="hero-img" style="display: flex; justify-content: flex-end;">
+            <img src="docs/IconeV2.png" style="width: 80%; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.1));" alt="Edivan Silva">
+        </div>
+    </header>
+
+    <section id="produtos">
+        <h2 class="section-title">Produtos de Destaque</h2>
+        <div class="grid-products">
+            <a href="https://edivansilva.projects.earthengine.app/view/pb-mpgrid" target="_blank" class="card">
+                <span class="tag">GEE / APP</span>
+                <div class="card-header">
+                    <i class="fas fa-th"></i>
+                    <h3>PB-MPGRID</h3>
+                </div>
+                <p>Produto gridded de precipitação mensal para todo o estado da Paraíba.</p>
+            </a>
+            <a href="https://ee-edivanaesa.projects.earthengine.app/view/ndvi-pb-20" target="_blank" class="card">
+                <span class="tag">SENS. REMOTO</span>
+                <div class="card-header">
+                    <i class="fas fa-leaf"></i>
+                    <h3>NDVI PB 2.0</h3>
+                </div>
+                <p>Monitoramento mensal da variabilidade da vegetação via satélite Terra/Aqua na plataforma GEE.</p>
+            </a>
+            <a href="https://www.aesa.pb.gov.br/aesa-website/noticia/aesa-lanca-atlas-pluviometrico-da-paraiba-que-reune-historico-de-chuvas-dos-ultimos-30-anos/" target="_blank" class="card">
+                <span class="tag">PUBLICAÇÃO</span>
+                <div class="card-header">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h3>Atlas Pluviométrico</h3>
+                </div>
+                <p>Elaboração dos mapas climatológicos da precipitação (1994-2023) no estado da Paraíba.</p>
+            </a>
+            <a href="https://edivans96.github.io/PET-Saude-Digital-GAT-5/index.html" target="_blank" class="card">
+                <span class="tag">BIOMETEOROLOGIA</span>
+                <div class="card-header">
+                    <i class="fas fa-microscope"></i>
+                    <h3>LIRAa Digital</h3>
+                </div>
+                <p>Portal para vigilância do Aedes aegypti, correlacionando índices prediais com fatores socioambientais.</p>
+            </a>
+        </div>
+    </section>
+
+   <section id="tecnologias" style="background: var(--gray-soft);">
+    <h2 class="section-title">Tecnologias & Habilidades</h2>
+    <div class="grid-products">
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-code"></i>
+                <h3>Stack Técnica</h3>
+            </div>
+            <p>Linguagens para processamento de dados e desenvolvimento.</p>
+            <div class="tech-container">
+                <img src="https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white" alt="Python"/>
+                <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat&logo=javascript&logoColor=black" alt="JavaScript"/>
+                <img src="https://img.shields.io/badge/HTML5-E34F26?style=flat&logo=html5&logoColor=white" alt="HTML5"/>
+                <img src="https://img.shields.io/badge/CSS3-1572B6?style=flat&logo=css&logoColor=white" alt="CSS3"/>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-satellite"></i>
+                <h3>Geoprocessamento</h3>
+            </div>
+            <p>Sistemas de Informação Geográfica (SIG) e processamento de imagens de satélite.</p>
+            <div class="tech-container">
+                <img src="https://img.shields.io/badge/QGIS-589632?style=flat&logo=qgis&logoColor=white" alt="QGIS"/>
+                <img src="https://img.shields.io/badge/Google%20Earth%20Engine-34A853?style=flat&logo=google-earth&logoColor=white" alt="GEE"/>
+                <img src="https://img.shields.io/badge/GDAL-006633?style=flat&logo=osgeo&logoColor=white" alt="GDAL"/>
+                <img src="https://img.shields.io/badge/ArcGIS-005E95?style=flat&logo=esri&logoColor=white" alt="ArcGIS"/>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-eye"></i>
+                <h3>Visualização & Mapas</h3>
+            </div>
+            <p>Criação de cartografia temática e layouts de alta precisão para publicações.</p>
+            <div class="tech-container">
+                <img src="https://img.shields.io/badge/GrADS-0055A5?style=flat&logo=gnu-bash&logoColor=white" alt="GrADS"/>
+                <img src="https://img.shields.io/badge/Surfer-FF6F00?style=flat&logo=openstreetmap&logoColor=white" alt="Surfer"/>
+                <img src="https://img.shields.io/badge/Leaflet-199900?style=flat&logo=leaflet&logoColor=white" alt="Leaflet"/>
+                <img src="https://img.shields.io/badge/Canva-00C4CC?style=flat&logo=canva&logoColor=white" alt="Canva Design"/>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-chart-line"></i>
+                <h3>Análise de Dados</h3>
+            </div>
+            <p>Tratamento de dados estruturados, análise estatística e visualização científica.</p>
+            <div class="tech-container">
+                <img src="https://img.shields.io/badge/Google%20Cloud-4285F4?style=flat&logo=google-cloud&logoColor=white" alt="Google Cloud"/>
+                <img src="https://img.shields.io/badge/Pandas-150458?style=flat&logo=pandas&logoColor=white" alt="Pandas"/>
+                <img src="https://img.shields.io/badge/NumPy-013243?style=flat&logo=numpy&logoColor=white" alt="NumPy"/>
+                <img src="https://img.shields.io/badge/Matplotlib-11557c?style=flat&logo=python&logoColor=white" alt="Matplotlib"/>
+                <img src="https://img.shields.io/badge/Excel-217346?style=flat&logo=googlesheets&logoColor=white" alt="Excel"/>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <footer>
+        <div class="footer-grid">
+            <div>
+                <h3 style="margin-bottom: 15px;">Edivan Silva dos Santos</h3>
+                <p style="opacity: 0.7; font-size: 0.9rem;">Graduando em Meteorologia com foco em soluções baseadas em dados e geotecnologias.</p>
+            </div>
+            <div>
+                <h4 style="margin-bottom: 15px;">Contatos</h4>
+                <div class="footer-info"><i class="fas fa-map-marker-alt"></i> Campina Grande, PB</div>
+                <div class="footer-info"><i class="fas fa-envelope"></i> edivan.silva@estudante.ufcg.edu.br</div>
+            </div>
+            <div>
+                <h4 style="margin-bottom: 15px;">Social Profissional</h4>
+                <a href="https://github.com/EdivanS96" target="_blank" class="social-link"><i class="fab fa-github"></i></a>
+                <a href="https://orcid.org/0009-0001-0099-3263" target="_blank" class="social-link"><i class="fab fa-orcid"></i></a>
+                <a href="https://lattes.cnpq.br/2690669771522466" target="_blank" class="social-link"><i class="fas fa-id-card"></i></a>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 40px; font-size: 0.8rem; opacity: 0.5;">
+            © 2026 | Edivan Silva. Todos os direitos reservados.
+        </div>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
