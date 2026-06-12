@@ -1,5 +1,5 @@
 # Instala as bibliotecas necessárias
-!pip install geopandas shapely fiona openpyxl requests zipfile36 --quiet
+#!pip install geopandas shapely fiona openpyxl requests zipfile36 --quiet
 
 # =========================================================
 # MONITOR DE SECAS DA PARAÍBA – PIPELINE AUTOMATIZADO (Colab)
