@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Levantamento Social dos Impactos da Seca - AESA / ANA</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        
+        .municipio-path {
+            transition: fill 0.1s ease;
+            cursor: pointer;
+        }
+        .municipio-path:hover {
+            fill-opacity: 0.85;
+        }
+        #tooltip {
+            position: fixed;
+            background: rgba(15, 23, 42, 0.95);
+            color: #ffffff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: none;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+    </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-screen">
+
+    <header class="bg-gradient-to-r from-emerald-800 to-slate-900 text-white shadow-md border-b-4 border-amber-500">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <img src="https://www.aesa.pb.gov.br/assets/uploads/2024/07/LOGO-AESA_Prancheta-1-1-2048x930.png" alt="AESA" class="h-12 object-contain">
+                <div class="h-8 w-[1px] bg-emerald-600 hidden md:block"></div>
+                <img src="https://monitordesecas.ana.gov.br/assets/img/logo_nome_horizontal_branco.png" alt="ANA" class="h-11 object-contain">
+            </div>
+            <div class="text-center md:text-right">
+                <h1 class="text-lg font-bold tracking-wide">LEVANTAMENTO SOCIAL DOS IMPACTOS DA SECA</h1>
+                <p class="text-emerald-300 text-xs font-medium">Estado da Paraíba</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto px-4 py-4 flex-1">
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-10 gap-4 mb-4">
+            
+            <div class="lg:col-span-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 h-14">
+                <div class="flex items-center gap-1.5 shrink-0">
+                    <i class="fa-solid fa-calendar-days text-emerald-600 text-xs"></i>
+                    <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Período</span>
+                </div>
+                <div class="flex items-center gap-2 flex-1 min-w-0">
+                    <input type="date" id="data_inicio" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
+                    <span class="text-slate-400 text-xs shrink-0">à</span>
+                    <input type="date" id="data_fim" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
+                </div>
+                <button id="btn_filtrar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1 rounded transition-all cursor-pointer shadow-sm shrink-0">
+                    Filtrar
+                </button>
+            </div>
+
+            <div class="lg:col-span-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between h-14">
+                <div class="min-w-0">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Relatos</p>
+                    <h3 id="card_total" class="text-xl font-bold text-slate-800 leading-tight mt-0.5">-</h3>
+                </div>
+                <i class="fa-solid fa-file-csv text-xl text-emerald-600 opacity-40 shrink-0"></i>
+            </div>
+
+            <div class="lg:col-span-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between h-14">
+                <div class="min-w-0">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Municípios</p>
+                    <h3 id="card_mun" class="text-xl font-bold text-slate-800 leading-tight mt-0.5">-</h3>
+                </div>
+                <i class="fa-solid fa-map-location-dot text-xl text-blue-600 opacity-40 shrink-0"></i>
+            </div>
+
+            <div class="lg:col-span-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between h-14">
+                <div class="min-w-0">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate" title="Ritmo de alimentação do formulário">Envio de Dados</p>
+                    <h3 id="card_tendencia" class="text-sm font-bold text-slate-500 leading-tight mt-1">Estável</h3>
+                </div>
+                <i id="icon_tendencia" class="fa-solid fa-arrow-right text-lg text-slate-400 opacity-45 shrink-0"></i>
+            </div>
+            
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6 items-stretch">
+            <div class="lg:col-span-7 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-xs">Frequência de Relatos por Município</h3>
+                        <p class="text-[10px] text-slate-400">Distribuição espacial baseada nas respostas validadas.</p>
+                    </div>
+                    <button id="btn_download_mapa" class="text-slate-400 hover:text-slate-700 p-1 text-xs cursor-pointer transition-all" title="Exportar PNG (Completo com Título)">
+                        <i class="fa-solid fa-download text-sm"></i>
+                    </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 text-[9px] font-semibold text-slate-600 bg-slate-50 p-1.5 rounded mb-2 border border-slate-100">
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-white border border-black block"></span> Sem relatos</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#FFE0B2] border border-black block"></span> 1 relato</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#FFB74D] border border-black block"></span> 2-3 relatos</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#F57C00] border border-black block"></span> 4-5 relatos</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#D84315] border border-black block"></span> &gt; 5 relatos</span>
+                </div>
+
+                <div id="map-container" class="w-full h-[380px] flex items-center justify-center border border-slate-100 overflow-hidden bg-slate-50 rounded-lg relative flex-1">
+                    <svg id="svg-map" class="w-full h-full" viewBox="0 0 850 460" preserveAspectRatio="xMidYMid meet"></svg>
+                    <div id="tooltip"></div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-5 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-xs mb-0.5"><i class="fa-solid fa-message text-emerald-600 mr-1"></i> Relatos Detalhados de Campo</h3>
+                    <p class="text-[10px] text-slate-400 mb-2 border-b pb-1">Últimas observações textuais registradas pelos técnicos.</p>
+                </div>
+                <div id="feed_container" class="space-y-2 overflow-y-auto pr-1 flex-1 max-h-[420px]"></div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl p-3 shadow-sm border border-slate-200 mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-emerald-600"></i> Indicadores Macrorregionais Consolidados
+                </h3>
+                <p class="text-slate-400 text-[11px]">Ajuste a métrica de exibição global para todos os indicadores de campo.</p>
+            </div>
+            
+            <div class="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center gap-1">
+                <button id="mode_abs" class="px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all bg-white text-emerald-800 shadow-sm">
+                    Nº de Respostas
+                </button>
+                <button id="mode_pct" class="px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all text-slate-500 hover:text-slate-800">
+                    Porcentagem (%)
+                </button>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Evolução do Quadro de Seca</h4>
+                    <button id="btn_down_quadro" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="h-60"><canvas id="chart_quadro"></canvas></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Avaliação das Chuvas Ocorridas</h4>
+                    <button id="btn_down_chuva" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="h-60"><canvas id="chart_chuva"></canvas></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Impacto nos Cultivos de Sequeiro</h4>
+                    <button id="btn_down_culturas" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="h-60"><canvas id="chart_culturas"></canvas></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Tipos de Culturas Afetadas (Frequência)</h4>
+                    <button id="btn_down_afetadas" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="h-60"><canvas id="chart_afetadas"></canvas></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Estado de Nível dos Reservatórios</h4>
+                    <button id="btn_down_hidrico" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="h-60"><canvas id="chart_hidrico"></canvas></div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Impactos Hídricos e Restrições Operadas</h4>
+                    <button id="btn_down_impactos" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
+                </div>
+                <div class="h-60"><canvas id="chart_impactos"></canvas></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="w-full bg-slate-900 border-t border-slate-800 py-3 mt-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>&copy; 2026 | <a href="https://edivans96.github.io/Meteorologia/" target="_blank" class="text-emerald-400 hover:text-emerald-300 transition-colors font-medium">ES DOS SANTOS</a>.</p>
+        </div>
+    </footer>
+
+    <script>
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIOHu4qJD0GdiG0AIRlLZjKnizWEb6eXd8RZQR38GuQSv1mHLj2OXvGWGZX9f91ncjQX27qBgSDyiG/pub?gid=1982641808&single=true&output=csv";
+        const GEOJSON_URL = "https://raw.githubusercontent.com/EdivanS96/Meteorologia/main/MONITOR/DATA/municipios_pb.geojson";
+        const LISTA_REGIOES_ORDENADA = ["Litoral", "Brejo", "Agreste", "Cariri", "Curimataú", "Sertão", "Alto Sertão"];
+
+        let dadosPlanilha = [];
+        let geojsonMapData = null;
+        let graficosInstanciados = {};
+        let modoVisualizacaoGraficos = 'absoluto';
+
+        function normalizar(txt) {
+            if (!txt) return "";
+            return txt.toString().toUpperCase()
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/-[A-Z]{2}$/, '')
+                .replace(/\d+/g, '')
+                .replace(/[^A-Z ]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function extrairDataEHoraBR(stringData) {
+            if (!stringData) return null;
+            try {
+                const partesEspaco = stringData.trim().split(" ");
+                const apenasData = partesEspaco[0];
+                const apenasHora = partesEspaco[1] || "00:00:00";
+
+                const partesD = apenasData.split("/");
+                const partesH = apenasHora.split(":");
+
+                if (partesD.length !== 3) return null;
+
+                const dia = parseInt(partesD[0], 10);
+                const mes = parseInt(partesD[1], 10) - 1;
+                const ano = parseInt(partesD[2], 10);
+
+                const hora = parseInt(partesH[0] || 0, 10);
+                const min = parseInt(partesH[1] || 0, 10);
+                const seg = parseInt(partesH[2] || 0, 10);
+
+                return new Date(ano, mes, dia, hora, min, seg);
+            } catch (e) { return null; }
+        }
+
+        function parsearCSV(csvText) {
+            const linhas = csvText.split(/\r?\n/);
+            if (linhas.length === 0) return [];
+            
+            const camposCabecalho = [];
+            let emAspasCab = false;
+            let termoAcumuladoCab = "";
+            let primeiraLinha = linhas[0];
+            
+            for(let j=0; j<primeiraLinha.length; j++) {
+                const char = primeiraLinha[j];
+                if(char === '"') { emAspasCab = !emAspasCab; }
+                else if(char === ',' && !emAspasCab) {
+                    camposCabecalho.push(termoAcumuladoCab.trim().replace(/^"|"$/g, ""));
+                    termoAcumuladoCab = "";
+                } else { termoAcumuladoCab += char; }
+            }
+            camposCabecalho.push(termoAcumuladoCab.trim().replace(/^"|"$/g, ""));
+
+            const resultado = [];
+            for (let i = 1; i < linhas.length; i++) {
+                const line = linhas[i];
+                if (!line.trim()) continue;
+
+                const campos = [];
+                let emAspas = false;
+                let campoAcumulado = "";
+
+                for (let j = 0; j < line.length; j++) {
+                    const char = line[j];
+                    if (char === '"') { emAspas = !emAspas; }
+                    else if (char === ',' && !emAspas) {
+                        campos.push(campoAcumulado.trim().replace(/^"|"$/g, ""));
+                        campoAcumulado = "";
+                    } else { campoAcumulado += char; }
+                }
+                campos.push(campoAcumulado.trim().replace(/^"|"$/g, ""));
+
+                const obj = {};
+                camposCabecalho.forEach((h, idx) => { 
+                    let val = campos[idx] || "";
+                    val = val.replace(/^"|"$/g, "").trim();
+                    obj[h] = val; 
+                });
+                resultado.push(obj);
+            }
+            return resultado;
+        }
+
+        function projetarPB(lon, lat, w = 850, h = 460) {
+            const minX = -38.95; const maxX = -34.70;
+            const minY = -8.35;  const maxY = -6.00;
+            const x = ((lon - minX) / (maxX - minX)) * (w - 40) + 20;
+            const y = h - (((lat - minY) / (maxY - minY)) * (h - 40) + 20);
+            return { x: x, y: y, str: `${x.toFixed(1)},${y.toFixed(1)}` };
+        }
+
+        function localizarColunaPorIndiceOuTermo(termo, indiceFallback) {
+            if (!dadosPlanilha.length) return null;
+            const chaves = Object.keys(dadosPlanilha[0]);
+            
+            const encontrada = chaves.find(k => 
+                k.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').includes(termo.toLowerCase())
+            );
+            if (encontrada) return encontrada;
+            
+            return chaves[indiceFallback] || null;
+        }
+
+        async function inicializarPortal() {
+            try {
+                const [resCsv, resGeojson] = await Promise.all([
+                    fetch(CSV_URL).then(r => r.text()),
+                    fetch(GEOJSON_URL).then(r => r.json())
+                ]);
+                dadosPlanilha = parsearCSV(resCsv);
+                geojsonMapData = resGeojson;
+
+                const dataHojeFusoReal = new Date(); 
+                const trintaDiasAtras = new Date();
+                trintaDiasAtras.setDate(dataHojeFusoReal.getDate() - 30);
+
+                const formatarDataInput = (d) => {
+                    const ano = d.getFullYear();
+                    const mes = String(d.getMonth() + 1).padStart(2, '0');
+                    const dia = String(d.getDate()).padStart(2, '0');
+                    return `${ano}-${mes}-${dia}`;
+                };
+
+                document.getElementById('data_inicio').value = formatarDataInput(trintaDiasAtras);
+                document.getElementById('data_fim').value = formatarDataInput(dataHojeFusoReal);
+
+                configurarAlternadorModo();
+                processarEFiltrarPainel();
+            } catch (err) {
+                console.error("Erro crítico: ", err);
+            }
+        }
+
+        function configurarAlternadorModo() {
+            const btnAbs = document.getElementById('mode_abs');
+            const btnPct = document.getElementById('mode_pct');
+
+            btnAbs.addEventListener('click', () => {
+                modoVisualizacaoGraficos = 'absoluto';
+                btnAbs.className = "px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all bg-white text-emerald-800 shadow-sm";
+                btnPct.className = "px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all text-slate-500 hover:text-slate-800";
+                processarEFiltrarPainel();
+            });
+
+            btnPct.addEventListener('click', () => {
+                modoVisualizacaoGraficos = 'porcentagem';
+                btnPct.className = "px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all bg-white text-emerald-800 shadow-sm";
+                btnAbs.className = "px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all text-slate-500 hover:text-slate-800";
+                processarEFiltrarPainel();
+            });
+        }
+
+        // Lógica Corrigida: Foco em "Envio de Dados" (Engajamento da Equipe)
+        function calcularTendencia(dadosAtuais, dInicio, dFim) {
+            const metadePeriodo = new Date(dInicio.getTime() + (dFim.getTime() - dInicio.getTime()) / 2);
+
+            const primeiraMetade = dadosAtuais.filter(l => {
+                const d = extrairDataEHoraBR(l["Carimbo de data/hora"]);
+                return d && d >= dInicio && d < metadePeriodo;
+            }).length;
+
+            const segundaMetade = dadosAtuais.filter(l => {
+                const d = extrairDataEHoraBR(l["Carimbo de data/hora"]);
+                return d && d >= metadePeriodo && d <= dFim;
+            }).length;
+
+            const cardT = document.getElementById('card_tendencia');
+            const iconT = document.getElementById('icon_tendencia');
+
+            if (dadosAtuais.length === 0) {
+                cardT.innerText = "Sem dados";
+                cardT.className = "text-sm font-bold text-slate-400 leading-tight mt-1";
+                iconT.className = "fa-solid fa-minus text-lg text-slate-400 opacity-45 shrink-0";
+                return;
+            }
+
+            const difPct = primeiraMetade > 0 ? ((segundaMetade - primeiraMetade) / primeiraMetade) * 100 : 0;
+
+            if (segundaMetade > primeiraMetade && difPct > 10) {
+                // Mais formulários entrando = Ótimo, sistema ativo! (Verde)
+                cardT.innerText = "Acelerado";
+                cardT.className = "text-sm font-bold text-emerald-600 leading-tight mt-1";
+                iconT.className = "fa-solid fa-arrow-trend-up text-lg text-emerald-600 opacity-70 shrink-0";
+            } else if (primeiraMetade > segundaMetade && difPct < -10) {
+                // Menos formulários entrando = Alerta de queda na alimentação (Amber/Laranja)
+                cardT.innerText = "Queda de Envio";
+                cardT.className = "text-sm font-bold text-amber-600 leading-tight mt-1";
+                iconT.className = "fa-solid fa-arrow-trend-down text-lg text-amber-500 opacity-70 shrink-0";
+            } else {
+                // Fluxo contínuo e regular (Azul)
+                cardT.innerText = "Constante";
+                cardT.className = "text-sm font-bold text-blue-600 leading-tight mt-1";
+                iconT.className = "fa-solid fa-arrow-right text-lg text-blue-600 opacity-70 shrink-0";
+            }
+        }
+
+        function processarEFiltrarPainel() {
+            const dateInputInicio = document.getElementById('data_inicio').value;
+            const dateInputFim = document.getElementById('data_fim').value;
+
+            if(!dateInputInicio || !dateInputFim) return;
+
+            const dInicio = new Date(dateInputInicio + "T00:00:00");
+            const dFim = new Date(dateInputFim + "T23:59:59");
+
+            const dadosFiltrados = dadosPlanilha.filter(l => {
+                const dataRaw = l["Carimbo de data/hora"];
+                if (!dataRaw) return false;
+                const dReg = extrairDataEHoraBR(dataRaw);
+                return dReg && dReg >= dInicio && dReg <= dFim;
+            });
+
+            const contagemMunicipios = {};
+            const colMunicipio = localizarColunaPorIndiceOuTermo("Municipio", 3);
+
+            dadosFiltrados.forEach(l => {
+                const m = l[colMunicipio];
+                if (m) {
+                    const norm = normalizar(m);
+                    contagemMunicipios[norm] = (contagemMunicipios[norm] || 0) + 1;
+                }
+            });
+
+            document.getElementById('card_total').innerText = dadosFiltrados.length;
+            document.getElementById('card_mun').innerText = Object.keys(contagemMunicipios).length;
+
+            calcularTendencia(dadosFiltrados, dInicio, dFim);
+            renderizarMapa(contagemMunicipios);
+            atualizarFeedRelatos(dadosFiltrados);
+            renderizarTodosGraficos(dadosFiltrados);
+        }
+
+        function renderizarMapa(contagem) {
+            const svg = document.getElementById('svg-map');
+            svg.innerHTML = '';
+            if (!geojsonMapData) return;
+
+            const tooltip = document.getElementById('tooltip');
+
+            geojsonMapData.features.forEach(feature => {
+                const props = feature.properties || {};
+                const nomeMun = props.name || props.description || props.NOMEMUN || props.NM_MUN || props.NM_MUNICIPIO || "Município";
+                const nomeNorm = normalizar(nomeMun);
+                const totalRelatos = contagem[nomeNorm] || 0;
+
+                let cor = "#ffffff";
+                if (totalRelatos > 0) {
+                    cor = totalRelatos > 5 ? "#D84315" :
+                          totalRelatos > 3 ? "#F57C00" :
+                          totalRelatos > 1 ? "#FFB74D" : "#FFE0B2";
+                }
+
+                let dPath = "";
+                let somatorioX = 0, somatorioY = 0, totalPontosCentroide = 0;
+                const geom = feature.geometry;
+                if (!geom) return;
+
+                const deconstructPolygon = (coords) => {
+                    coords.forEach(subLoop => {
+                        subLoop.forEach((pt, idx) => {
+                            const p = projetarPB(pt[0], pt[1]);
+                            dPath += `${idx === 0 ? 'M' : 'L'}${p.str} `;
+                            somatorioX += p.x; somatorioY += p.y;
+                            totalPontosCentroide++;
+                        });
+                        dPath += "Z ";
+                    });
+                };
+
+                if (geom.type === "Polygon") {
+                    deconstructPolygon(geom.coordinates);
+                } else if (geom.type === "MultiPolygon") {
+                    geom.coordinates.forEach(polyCoords => {
+                        deconstructPolygon(polyCoords);
+                    });
+                }
+
+                if (!dPath) return;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", dPath);
+                path.setAttribute("fill", cor);
+                path.setAttribute("stroke", "#000000"); 
+                path.setAttribute("stroke-width", "0.7");
+                path.setAttribute("class", "municipio-path");
+                path.setAttribute("data-nome", nomeMun);
+                path.setAttribute("data-quant", totalRelatos);
+
+                path.addEventListener("mousemove", (e) => {
+                    tooltip.style.display = "block";
+                    tooltip.style.left = (e.clientX + 15) + "px";
+                    tooltip.style.top = (e.clientY + 15) + "px";
+                    tooltip.innerHTML = `<strong>${nomeMun}</strong><br><span class="text-amber-400 font-bold">${totalRelatos} relatos validados</span>`;
+                });
+
+                path.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
+                svg.appendChild(path);
+
+                if(totalRelatos > 0 && totalPontosCentroide > 0) {
+                    const centroX = somatorioX / totalPontosCentroide;
+                    const centroY = somatorioY / totalPontosCentroide;
+                    path.setAttribute("data-cx", centroX);
+                    path.setAttribute("data-cy", centroY);
+                }
+            });
+        }
+
+        function registrarColunaRelatoMapeada() {
+            if (!dadosPlanilha.length) return null;
+            const cabecalhos = Object.keys(dadosPlanilha[0]);
+            return cabecalhos.find(k => k.toLowerCase().includes("caso deseje") || k.toLowerCase().includes("comentario") || k.toLowerCase().includes("informe")) || cabecalhos[cabecalhos.length - 1];
+        }
+
+        function atualizarFeedRelatos(dados) {
+            const container = document.getElementById('feed_container');
+            container.innerHTML = '';
+
+            const colObs = registrarColunaRelatoMapeada();
+            const colMun = localizarColunaPorIndiceOuTermo("Municipio", 3);
+            const colRegiao = localizarColunaPorIndiceOuTermo("regiao", 1);
+
+            const dadosComRelato = dados.filter(l => {
+                const desc = l[colObs];
+                return desc && desc.trim() !== "" && desc.trim() !== "Não informado";
+            });
+
+            dadosComRelato.sort((a, b) => {
+                const dataCompletaA = extrairDataEHoraBR(a["Carimbo de data/hora"]) || new Date(0);
+                const dataCompletaB = extrairDataEHoraBR(b["Carimbo de data/hora"]) || new Date(0);
+                return dataCompletaB - dataCompletaA;
+            });
+
+            dadosComRelato.forEach(l => {
+                const desc = l[colObs];
+                const dataRaw = l["Carimbo de data/hora"] ? l["Carimbo de data/hora"].split(" ")[0] : "—";
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs shadow-sm space-y-1 mb-2";
+                card.innerHTML = `
+                    <div class="flex items-center justify-between text-slate-400 font-medium text-[10px]">
+                        <span><i class="fa-solid fa-user text-slate-500"></i> ${l[Object.keys(l)[2]] || "Técnico de Campo"}</span>
+                        <span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-calendar-days mr-1"></i>${dataRaw}</span>
+                    </div>
+                    <p class="font-bold text-slate-700 mt-1"><i class="fa-solid fa-location-dot text-amber-600"></i> ${l[colMun] || "Desconhecido"} — <span class="text-emerald-700 font-semibold">${l[colRegiao] || "Geral"}</span></p>
+                    <p class="text-slate-600 italic bg-white p-2 rounded border border-slate-100 mt-1">"${desc}"</p>
+                `;
+                container.appendChild(card);
+            });
+
+            if(container.children.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-400 text-xs py-12">Nenhum comentário descritivo ou relato listado no período.</p>`;
+            }
+        }
+
+        function gerarEstruturaDadosGrafico(dados, termoColuna, indiceColuna, eMultiplaEscolha = false) {
+            const colAlvo = localizarColunaPorIndiceOuTermo(termoColuna, indiceColuna);
+            const colRegiao = localizarColunaPorIndiceOuTermo("regiao", 1);
+            
+            const classesRespostas = [];
+            if(colAlvo) {
+                dados.forEach(d => {
+                    const rRaw = d[colAlvo] ? d[colAlvo].trim() : "";
+                    if (rRaw) {
+                        if (eMultiplaEscolha) {
+                            rRaw.split(',').forEach(item => {
+                                const limpo = item.replace(/^"|"$/g, "").trim();
+                                if (limpo && limpo !== "Não informado" && !classesRespostas.includes(limpo)) {
+                                    classesRespostas.push(limpo);
+                                }
+                            });
+                        } else {
+                            const limpoBase = rRaw.replace(/^"|"$/g, "").trim();
+                            if (!classesRespostas.includes(limpoBase)) classesRespostas.push(limpoBase);
+                        }
+                    }
+                });
+            }
+
+            const totaisPorRegiao = {};
+            LISTA_REGIOES_ORDENADA.forEach(reg => {
+                totaisPorRegiao[reg] = dados.filter(d => {
+                    const rPlanilha = d[colRegiao];
+                    return rPlanilha && rPlanilha.toLowerCase().trim() === reg.toLowerCase() && d[colAlvo];
+                }).length;
+            });
+
+            const datasets = classesRespostas.map((cat, i) => {
+                const paletaCores = ['#ea580c', '#f59e0b', '#2563eb', '#16a34a', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6', '#06b6d4', '#f43f5e'];
+                return {
+                    label: cat,
+                    data: LISTA_REGIOES_ORDENADA.map(reg => {
+                        const ocorrencias = dados.filter(d => {
+                            const rPlanilha = d[colRegiao];
+                            if (!rPlanilha || rPlanilha.toLowerCase().trim() !== reg.toLowerCase()) return false;
+                            
+                            const valorCelua = d[colAlvo] || "";
+                            if (eMultiplaEscolha) {
+                                return valorCelua.toLowerCase().includes(cat.toLowerCase());
+                            } else {
+                                return valorCelua.trim() === cat;
+                            }
+                        }).length;
+
+                        if (modoVisualizacaoGraficos === 'porcentagem') {
+                            const totalDaRegiao = totaisPorRegiao[reg] || 0;
+                            return totalDaRegiao > 0 ? parseFloat(((ocorrencias / totalDaRegiao) * 100).toFixed(1)) : 0;
+                        }
+                        return ocorrencias;
+                    }),
+                    backgroundColor: paletaCores[i % paletaCores.length]
+                };
+            });
+
+            return { labels: LISTA_REGIOES_ORDENADA, datasets: datasets };
+        }
+
+        function renderizarTodosGraficos(dados) {
+            const configs = [
+                { id: 'chart_quadro', termo: 'quadro de seca', idx: 8, mult: false },
+                { id: 'chart_chuva', termo: 'chuvas ocorridas', idx: 9, mult: false },
+                { id: 'chart_culturas', termo: 'culturas de sequeiro', idx: 11, mult: false },
+                { id: 'chart_afetadas', termo: 'Feijão', idx: 12, mult: true }, 
+                { id: 'chart_hidrico', termo: 'Níveis', idx: 13, mult: false },   
+                { id: 'chart_impactos', termo: 'Abastecimento', idx: 14, mult: true } 
+            ];
+
+            configs.forEach(cfg => {
+                if (graficosInstanciados[cfg.id]) graficosInstanciados[cfg.id].destroy();
+
+                const estrutura = gerarEstruturaDadosGrafico(dados, cfg.termo, cfg.idx, cfg.mult);
+                const sufixoLabel = modoVisualizacaoGraficos === 'porcentagem' ? '%' : ' respostas';
+
+                graficosInstanciados[cfg.id] = new Chart(document.getElementById(cfg.id), {
+                    type: 'bar',
+                    data: estrutura,
+                    options: {
+                        indexAxis: 'y', 
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { 
+                                stacked: true, 
+                                max: modoVisualizacaoGraficos === 'porcentagem' ? 100 : undefined,
+                                ticks: { callback: value => value + (modoVisualizacaoGraficos === 'porcentagem' ? '%' : '') } 
+                            },
+                            y: { stacked: true, grid: { display: false }, ticks: { font: { size: 10, weight: '600' } } }
+                        },
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 8, font: { size: 9 } } },
+                            tooltip: {
+                                callbacks: {
+                                    label: context => ` ${context.dataset.label}: ${context.raw}${sufixoLabel}`
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function configurarBotaoDownload(idBotao, idCanvas, tituloIndicador, nomeArquivo) {
+            document.getElementById(idBotao).onclick = function() {
+                const graficoRef = graficosInstanciados[idCanvas];
+                if (!graficoRef) return;
+
+                const dateInputInicio = document.getElementById('data_inicio').value;
+                const dateInputFim = document.getElementById('data_fim').value;
+                const dataFormatadaInicio = dateInputInicio ? dateInputInicio.split('-').reverse().join('/') : '';
+                const dataFormatadaFim = dateInputFim ? dateInputFim.split('-').reverse().join('/') : '';
+                const textoPeriodo = `Período da Amostra: ${dataFormatadaInicio} até ${dataFormatadaFim}`;
+                const tipoMetrica = modoVisualizacaoGraficos === 'porcentagem' ? ' (Métrica: Proporção %)' : ' (Métrica: Frequência Absoluta)';
+
+                const canvasTemporario = document.createElement('canvas');
+                canvasTemporario.width = 1400; 
+                canvasTemporario.height = 850; 
+                const ctx = canvasTemporario.getContext('2d');
+
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvasTemporario.width, canvasTemporario.height);
+
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 26px "Inter", sans-serif';
+                ctx.fillText(tituloIndicador + tipoMetrica, 50, 60);
+
+                ctx.fillStyle = '#64748b';
+                ctx.font = '600 16px "Inter", sans-serif';
+                ctx.fillText(textoPeriodo, 50, 95);
+
+                const cloneGrafico = new Chart(ctx, {
+                    type: 'bar',
+                    data: JSON.parse(JSON.stringify(graficoRef.data)), 
+                    options: {
+                        indexAxis: 'y',
+                        responsive: false,
+                        animation: false,
+                        layout: {
+                            padding: { top: 130, bottom: 50, left: 50, right: 50 }
+                        },
+                        scales: {
+                            x: { 
+                                stacked: true, 
+                                max: modoVisualizacaoGraficos === 'porcentagem' ? 100 : undefined,
+                                ticks: { font: { size: 16, weight: 'bold' }, callback: value => value + (modoVisualizacaoGraficos === 'porcentagem' ? '%' : '') } 
+                            },
+                            y: { 
+                                stacked: true, 
+                                ticks: { font: { size: 18, weight: 'bold' } } 
+                            }
+                        },
+                        plugins: {
+                            legend: { 
+                                position: 'bottom', 
+                                labels: { font: { size: 13, weight: '700' }, boxWidth: 25 } 
+                            }
+                        }
+                    }
+                });
+
+                setTimeout(() => {
+                    const gatilhoLink = document.createElement('a');
+                    gatilhoLink.href = canvasTemporario.toDataURL('image/png', 1.0);
+                    gatilhoLink.download = "GRAFICO_" + nomeArquivo;
+                    gatilhoLink.click();
+                    cloneGrafico.destroy();
+                }, 300);
+            };
+        }
+
+        configurarBotaoDownload('btn_down_quadro', 'chart_quadro', 'Evolução do Quadro de Seca', 'quadro_seca.png');
+        configurarBotaoDownload('btn_down_chuva', 'chart_chuva', 'Avaliação das Chuvas Ocorridas', 'chuvas_ocorridas.png');
+        configurarBotaoDownload('btn_down_culturas', 'chart_culturas', 'Impacto nos Cultivos de Sequeiro', 'cultivos_sequeiro.png');
+        configurarBotaoDownload('btn_down_afetadas', 'chart_afetadas', 'Tipos de Culturas Afetadas', 'culturas_afetadas.png');
+        configurarBotaoDownload('btn_down_hidrico', 'chart_hidrico', 'Estado de Nível dos Reservatórios', 'nivel_reservatorios.png');
+        configurarBotaoDownload('btn_down_impactos', 'chart_impactos', 'Impactos Hídricos e Restrições', 'impactos_restricoes.png');
+
+        document.getElementById('btn_download_mapa').addEventListener('click', () => {
+            const svgOriginal = document.getElementById('svg-map');
+            const dataIniInput = document.getElementById('data_inicio').value;
+            const dataFimInput = document.getElementById('data_fim').value;
+            
+            const dataFormatadaInicio = dataIniInput ? dataIniInput.split('-').reverse().join('/') : '';
+            const dataFormatadaFim = dataFimInput ? dataFimInput.split('-').reverse().join('/') : '';
+            const textoPeriodo = `Período de Monitoramento: ${dataFormatadaInicio} até ${dataFormatadaFim}`;
+
+            const wReal = 1200; 
+            const hReal = 850; 
+
+            let conteudoPaths = svgOriginal.innerHTML;
+            let tagsNomesMunicipios = "";
+
+            const caminhosFilhos = svgOriginal.querySelectorAll('.municipio-path');
+            caminhosFilhos.forEach(p => {
+                const q = parseInt(p.getAttribute('data-quant') || '0', 10);
+                if (q > 0) {
+                    const cx = p.getAttribute('data-cx');
+                    const cy = p.getAttribute('data-cy');
+                    const nome = p.getAttribute('data-nome');
+                    if(cx && cy) {
+                        tagsNomesMunicipios += `
+                            <text x="${cx}" y="${cy}" 
+                                  font-family="'Inter', sans-serif" 
+                                  font-size="8.5px" 
+                                  font-weight="bold" 
+                                  fill="#000000" 
+                                  stroke="#ffffff" 
+                                  stroke-width="2.5px" 
+                                  paint-order="stroke fill" 
+                                  text-anchor="middle">${nome} (${q})</text>`;
+                    }
+                }
+            });
+
+            let svgCompletoExportacao = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="${wReal}" height="${hReal}" viewBox="0 0 850 600" style="background:#ffffff; font-family:'Inter', sans-serif;">
+                <text x="425" y="45" font-size="20px" font-weight="bold" fill="#0f172a" text-anchor="middle">Frequência de Relatos por Município</text>
+                <text x="425" y="70" font-size="12px" font-weight="600" fill="#64748b" text-anchor="middle">${textoPeriodo}</text>
+                
+                <g transform="translate(0, 70)">
+                    ${conteudoPaths}
+                    ${tagsNomesMunicipios}
+                </g>
+
+                <g transform="translate(185, 545)" font-size="11px" font-weight="bold" fill="#334155">
+                    <rect x="0" y="0" width="15" height="15" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+                    <text x="22" y="12">Sem relatos</text>
+
+                    <rect x="110" y="0" width="15" height="15" fill="#FFE0B2" stroke="#000000" stroke-width="1"/>
+                    <text x="132" y="12">1 relato</text>
+
+                    <rect x="210" y="0" width="15" height="15" fill="#FFB74D" stroke="#000000" stroke-width="1"/>
+                    <text x="232" y="12">2-3 relatos</text>
+
+                    <rect x="320" y="0" width="15" height="15" fill="#F57C00" stroke="#000000" stroke-width="1"/>
+                    <text x="342" y="12">4-5 relatos</text>
+
+                    <rect x="430" y="0" width="15" height="15" fill="#D84315" stroke="#000000" stroke-width="1"/>
+                    <text x="452" y="12">&gt; 5 relatos</text>
+                </g>
+            </svg>`;
+
+            const blob = new Blob([svgCompletoExportacao], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = wReal; canvas.height = hReal;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0);
+                
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.download = 'relatorio_mapa_monitor_pb.png';
+                link.click();
+                URL.revokeObjectURL(url);
+            };
+            img.src = url;
+        });
+
+        document.getElementById('btn_filtrar').addEventListener('click', processarEFiltrarPainel);
+        window.onload = inicializarPortal;
+    </script>
+</body>
+</html>

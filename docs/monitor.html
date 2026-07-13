@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap');
@@ -53,20 +54,27 @@
 
     <main class="max-w-7xl w-full mx-auto px-4 py-4 flex-1">
         
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-10 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 mb-4">
             
-            <div class="lg:col-span-4 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 h-14">
+            <!-- CONTAINER DE FILTRO ADAPTADO EXCLUSIVAMENTE PARA PERÍODO -->
+            <div class="lg:col-span-6 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 h-14">
                 <div class="flex items-center gap-1.5 shrink-0">
                     <i class="fa-solid fa-calendar-days text-emerald-600 text-xs"></i>
-                    <span class="text-[10px] font-bold text-slate-700 uppercase tracking-wider">Período</span>
+                    <span class="font-bold text-[10px] text-slate-700 uppercase tracking-wider">Período</span>
                 </div>
-                <div class="flex items-center gap-2 flex-1 min-w-0">
+
+                <!-- Inputs do Modo Período Fixo -->
+                <div id="container_periodo" class="flex items-center gap-2 flex-1 min-w-0">
                     <input type="date" id="data_inicio" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
                     <span class="text-slate-400 text-xs shrink-0">à</span>
                     <input type="date" id="data_fim" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
                 </div>
+
                 <button id="btn_filtrar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1 rounded transition-all cursor-pointer shadow-sm shrink-0">
                     Filtrar
+                </button>
+                <button id="btn_modal_obs" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-3 py-1 rounded transition-all cursor-pointer shadow-sm shrink-0 flex items-center gap-1">
+                    <i class="fa-solid fa-users text-[11px]"></i> Observadores
                 </button>
             </div>
 
@@ -88,7 +96,7 @@
 
             <div class="lg:col-span-2 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between h-14">
                 <div class="min-w-0">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate" title="Ritmo de alimentação do formulário">Envio de Dados</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate">Envio de Dados</p>
                     <h3 id="card_tendencia" class="text-sm font-bold text-slate-500 leading-tight mt-1">Estável</h3>
                 </div>
                 <i id="icon_tendencia" class="fa-solid fa-arrow-right text-lg text-slate-400 opacity-45 shrink-0"></i>
@@ -103,7 +111,7 @@
                         <h3 class="font-bold text-slate-900 text-xs">Frequência de Relatos por Município</h3>
                         <p class="text-[10px] text-slate-400">Distribuição espacial baseada nas respostas validadas.</p>
                     </div>
-                    <button id="btn_download_mapa" class="text-slate-400 hover:text-slate-700 p-1 text-xs cursor-pointer transition-all" title="Exportar PNG (Completo com Título)">
+                    <button id="btn_download_mapa" class="text-slate-400 hover:text-slate-700 p-1 text-xs cursor-pointer transition-all" title="Exportar PNG">
                         <i class="fa-solid fa-download text-sm"></i>
                     </button>
                 </div>
@@ -152,7 +160,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Evolução do Quadro de Seca</h4>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Evolução do Quadro de Seca (P1)</h4>
                     <button id="btn_down_quadro" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="h-60"><canvas id="chart_quadro"></canvas></div>
@@ -160,7 +168,7 @@
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Avaliação das Chuvas Ocorridas</h4>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Avaliação das Chuvas Ocorridas (P2)</h4>
                     <button id="btn_down_chuva" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="h-60"><canvas id="chart_chuva"></canvas></div>
@@ -168,7 +176,7 @@
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Impacto nos Cultivos de Sequeiro</h4>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Impacto nos Cultivos de Sequeiro (P5)</h4>
                     <button id="btn_down_culturas" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="h-60"><canvas id="chart_culturas"></canvas></div>
@@ -176,7 +184,7 @@
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Tipos de Culturas Afetadas (Frequência)</h4>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Tipos de Culturas Afetadas (P6)</h4>
                     <button id="btn_down_afetadas" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="h-60"><canvas id="chart_afetadas"></canvas></div>
@@ -184,7 +192,7 @@
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Estado de Nível dos Reservatórios</h4>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Estado de Nível dos Reservatórios (P8)</h4>
                     <button id="btn_down_hidrico" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="h-60"><canvas id="chart_hidrico"></canvas></div>
@@ -192,13 +200,68 @@
 
             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
-                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Impactos Hídricos e Restrições Operadas</h4>
+                    <h4 class="font-bold text-slate-700 text-xs uppercase tracking-wider">Impactos Hídricos e Restrições (P9)</h4>
                     <button id="btn_down_impactos" class="text-slate-400 hover:text-slate-700 p-1 text-xs"><i class="fa-solid fa-download"></i></button>
                 </div>
                 <div class="h-60"><canvas id="chart_impactos"></canvas></div>
             </div>
         </div>
     </main>
+
+    <div id="modal_observadores" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[99999] hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-5xl rounded-2xl shadow-xl border border-slate-200 flex flex-col max-h-[85vh]">
+            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-t-2xl">
+                <div>
+                    <h3 class="text-base font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-users text-emerald-400"></i> Gestão de Engajamento dos Observadores
+                    </h3>
+                    <p class="text-slate-400 text-xs mt-0.5">Listando observadores baseados no filtro de período atual.</p>
+                </div>
+                <button id="btn_fechar_modal" class="text-slate-400 hover:text-white transition-colors cursor-pointer text-xl p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 bg-slate-50 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Filtrar Região</label>
+                    <select id="filtro_obs_regiao" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
+                        <option value="">Todas as Regiões</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Status no Período Selecionado</label>
+                    <select id="filtro_obs_status" class="w-full bg-white border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
+                        <option value="">Todos os Status</option>
+                        <option value="enviou">Enviou no Intervalo Selecionado</option>
+                        <option value="nao_enviou">Não Enviou no Intervalo Selecionado</option>
+                    </select>
+                </div>
+                <div class="flex justify-end pt-4 sm:pt-0">
+                    <button id="btn_exportar_excel" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-excel text-sm"></i> Exportar XLSX
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto flex-1 p-4">
+                <table id="tabela_obs_corpo" class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px] bg-slate-100">
+                            <th class="p-2.5 font-bold">Nome do Observador</th>
+                            <th class="p-2.5 font-bold">Região</th>
+                            <th class="p-2.5 font-bold">Município Base</th>
+                            <th class="p-2.5 font-bold text-center">Status (No Intervalo)</th>
+                            <th class="p-2.5 font-bold text-center">Nº Total de Informes (Histórico Geral)</th>
+                            <th class="p-2.5 font-bold text-center">Contato</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista_observadores_linhas" class="divide-y divide-slate-100">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <footer class="w-full bg-slate-900 border-t border-slate-800 py-3 mt-6 text-center text-xs text-slate-400">
         <div class="max-w-7xl mx-auto px-4">
@@ -207,7 +270,7 @@
     </footer>
 
     <script>
-        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIOHu4qJD0GdiG0AIRlLZjKnizWEb6eXd8RZQR38GuQSv1mHLj2OXvGWGZX9f91ncjQX27qBgSDyiG/pub?gid=1982641808&single=true&output=csv";
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQIOHu4qJD0GdiG0AIRlLZjKnizWEb6eXd8RZQR38GuQSv1mHLj2OXvGWGZX9f91ncjQX27qBgSDyiG/pub?gid=1785964945&single=true&output=csv";
         const GEOJSON_URL = "https://raw.githubusercontent.com/EdivanS96/Meteorologia/main/MONITOR/DATA/municipios_pb.geojson";
         const LISTA_REGIOES_ORDENADA = ["Litoral", "Brejo", "Agreste", "Cariri", "Curimataú", "Sertão", "Alto Sertão"];
 
@@ -309,18 +372,6 @@
             return { x: x, y: y, str: `${x.toFixed(1)},${y.toFixed(1)}` };
         }
 
-        function localizarColunaPorIndiceOuTermo(termo, indiceFallback) {
-            if (!dadosPlanilha.length) return null;
-            const chaves = Object.keys(dadosPlanilha[0]);
-            
-            const encontrada = chaves.find(k => 
-                k.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').includes(termo.toLowerCase())
-            );
-            if (encontrada) return encontrada;
-            
-            return chaves[indiceFallback] || null;
-        }
-
         async function inicializarPortal() {
             try {
                 const [resCsv, resGeojson] = await Promise.all([
@@ -330,24 +381,22 @@
                 dadosPlanilha = parsearCSV(resCsv);
                 geojsonMapData = resGeojson;
 
-                const dataHojeFusoReal = new Date(); 
+                // Configura inputs do modo período padrão
+                const hoje = new Date();
                 const trintaDiasAtras = new Date();
-                trintaDiasAtras.setDate(dataHojeFusoReal.getDate() - 30);
-
+                trintaDiasAtras.setDate(hoje.getDate() - 30);
                 const formatarDataInput = (d) => {
-                    const ano = d.getFullYear();
-                    const mes = String(d.getMonth() + 1).padStart(2, '0');
-                    const dia = String(d.getDate()).padStart(2, '0');
-                    return `${ano}-${mes}-${dia}`;
+                    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 };
-
                 document.getElementById('data_inicio').value = formatarDataInput(trintaDiasAtras);
-                document.getElementById('data_fim').value = formatarDataInput(dataHojeFusoReal);
+                document.getElementById('data_fim').value = formatarDataInput(hoje);
 
                 configurarAlternadorModo();
+                configurarEventosModalObservadores();
+                
                 processarEFiltrarPainel();
             } catch (err) {
-                console.error("Erro crítico: ", err);
+                console.error("Erro crítico na inicialização: ", err);
             }
         }
 
@@ -370,17 +419,15 @@
             });
         }
 
-        // Lógica Corrigida: Foco em "Envio de Dados" (Engajamento da Equipe)
         function calcularTendencia(dadosAtuais, dInicio, dFim) {
             const metadePeriodo = new Date(dInicio.getTime() + (dFim.getTime() - dInicio.getTime()) / 2);
-
             const primeiraMetade = dadosAtuais.filter(l => {
-                const d = extrairDataEHoraBR(l["Carimbo de data/hora"]);
+                const d = extrairDataEHoraBR(l["Data/Hora"]);
                 return d && d >= dInicio && d < metadePeriodo;
             }).length;
 
             const segundaMetade = dadosAtuais.filter(l => {
-                const d = extrairDataEHoraBR(l["Carimbo de data/hora"]);
+                const d = extrairDataEHoraBR(l["Data/Hora"]);
                 return d && d >= metadePeriodo && d <= dFim;
             }).length;
 
@@ -397,17 +444,14 @@
             const difPct = primeiraMetade > 0 ? ((segundaMetade - primeiraMetade) / primeiraMetade) * 100 : 0;
 
             if (segundaMetade > primeiraMetade && difPct > 10) {
-                // Mais formulários entrando = Ótimo, sistema ativo! (Verde)
                 cardT.innerText = "Acelerado";
                 cardT.className = "text-sm font-bold text-emerald-600 leading-tight mt-1";
                 iconT.className = "fa-solid fa-arrow-trend-up text-lg text-emerald-600 opacity-70 shrink-0";
             } else if (primeiraMetade > segundaMetade && difPct < -10) {
-                // Menos formulários entrando = Alerta de queda na alimentação (Amber/Laranja)
                 cardT.innerText = "Queda de Envio";
                 cardT.className = "text-sm font-bold text-amber-600 leading-tight mt-1";
                 iconT.className = "fa-solid fa-arrow-trend-down text-lg text-amber-500 opacity-70 shrink-0";
             } else {
-                // Fluxo contínuo e regular (Azul)
                 cardT.innerText = "Constante";
                 cardT.className = "text-sm font-bold text-blue-600 leading-tight mt-1";
                 iconT.className = "fa-solid fa-arrow-right text-lg text-blue-600 opacity-70 shrink-0";
@@ -415,26 +459,26 @@
         }
 
         function processarEFiltrarPainel() {
+            let dadosFiltrados = [];
+            
             const dateInputInicio = document.getElementById('data_inicio').value;
             const dateInputFim = document.getElementById('data_fim').value;
 
             if(!dateInputInicio || !dateInputFim) return;
 
-            const dInicio = new Date(dateInputInicio + "T00:00:00");
-            const dFim = new Date(dateInputFim + "T23:59:59");
+            const dInicioTendencia = new Date(dateInputInicio + "T00:00:00");
+            const dFimTendencia = new Date(dateInputFim + "T23:59:59");
 
-            const dadosFiltrados = dadosPlanilha.filter(l => {
-                const dataRaw = l["Carimbo de data/hora"];
+            dadosFiltrados = dadosPlanilha.filter(l => {
+                const dataRaw = l["Data/Hora"];
                 if (!dataRaw) return false;
                 const dReg = extrairDataEHoraBR(dataRaw);
-                return dReg && dReg >= dInicio && dReg <= dFim;
+                return dReg && dReg >= dInicioTendencia && dReg <= dFimTendencia;
             });
 
             const contagemMunicipios = {};
-            const colMunicipio = localizarColunaPorIndiceOuTermo("Municipio", 3);
-
             dadosFiltrados.forEach(l => {
-                const m = l[colMunicipio];
+                const m = l["Municipio"];
                 if (m) {
                     const norm = normalizar(m);
                     contagemMunicipios[norm] = (contagemMunicipios[norm] || 0) + 1;
@@ -444,10 +488,11 @@
             document.getElementById('card_total').innerText = dadosFiltrados.length;
             document.getElementById('card_mun').innerText = Object.keys(contagemMunicipios).length;
 
-            calcularTendencia(dadosFiltrados, dInicio, dFim);
+            calcularTendencia(dadosFiltrados, dInicioTendencia, dFimTendencia);
             renderizarMapa(contagemMunicipios);
             atualizarFeedRelatos(dadosFiltrados);
             renderizarTodosGraficos(dadosFiltrados);
+            construirTabelaObservadores(); 
         }
 
         function renderizarMapa(contagem) {
@@ -490,9 +535,7 @@
                 if (geom.type === "Polygon") {
                     deconstructPolygon(geom.coordinates);
                 } else if (geom.type === "MultiPolygon") {
-                    geom.coordinates.forEach(polyCoords => {
-                        deconstructPolygon(polyCoords);
-                    });
+                    geom.coordinates.forEach(polyCoords => deconstructPolygon(polyCoords));
                 }
 
                 if (!dPath) return;
@@ -525,43 +568,33 @@
             });
         }
 
-        function registrarColunaRelatoMapeada() {
-            if (!dadosPlanilha.length) return null;
-            const cabecalhos = Object.keys(dadosPlanilha[0]);
-            return cabecalhos.find(k => k.toLowerCase().includes("caso deseje") || k.toLowerCase().includes("comentario") || k.toLowerCase().includes("informe")) || cabecalhos[cabecalhos.length - 1];
-        }
-
         function atualizarFeedRelatos(dados) {
             const container = document.getElementById('feed_container');
             container.innerHTML = '';
 
-            const colObs = registrarColunaRelatoMapeada();
-            const colMun = localizarColunaPorIndiceOuTermo("Municipio", 3);
-            const colRegiao = localizarColunaPorIndiceOuTermo("regiao", 1);
-
             const dadosComRelato = dados.filter(l => {
-                const desc = l[colObs];
+                const desc = l["10"];
                 return desc && desc.trim() !== "" && desc.trim() !== "Não informado";
             });
 
             dadosComRelato.sort((a, b) => {
-                const dataCompletaA = extrairDataEHoraBR(a["Carimbo de data/hora"]) || new Date(0);
-                const dataCompletaB = extrairDataEHoraBR(b["Carimbo de data/hora"]) || new Date(0);
+                const dataCompletaA = extrairDataEHoraBR(a["Data/Hora"]) || new Date(0);
+                const dataCompletaB = extrairDataEHoraBR(b["Data/Hora"]) || new Date(0);
                 return dataCompletaB - dataCompletaA;
             });
 
             dadosComRelato.forEach(l => {
-                const desc = l[colObs];
-                const dataRaw = l["Carimbo de data/hora"] ? l["Carimbo de data/hora"].split(" ")[0] : "—";
+                const desc = l["10"];
+                const dataRaw = l["Data/Hora"] ? l["Data/Hora"].split(" ")[0] : "—";
 
                 const card = document.createElement('div');
                 card.className = "bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs shadow-sm space-y-1 mb-2";
                 card.innerHTML = `
                     <div class="flex items-center justify-between text-slate-400 font-medium text-[10px]">
-                        <span><i class="fa-solid fa-user text-slate-500"></i> ${l[Object.keys(l)[2]] || "Técnico de Campo"}</span>
+                        <span><i class="fa-solid fa-user text-slate-500"></i> ${l["Observador"] || "Técnico"}</span>
                         <span class="bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-calendar-days mr-1"></i>${dataRaw}</span>
                     </div>
-                    <p class="font-bold text-slate-700 mt-1"><i class="fa-solid fa-location-dot text-amber-600"></i> ${l[colMun] || "Desconhecido"} — <span class="text-emerald-700 font-semibold">${l[colRegiao] || "Geral"}</span></p>
+                    <p class="font-bold text-slate-700 mt-1"><i class="fa-solid fa-location-dot text-amber-600"></i> ${l["Municipio"] || "Desconhecido"} — <span class="text-emerald-700 font-semibold">${l["Região"] || "Geral"}</span></p>
                     <p class="text-slate-600 italic bg-white p-2 rounded border border-slate-100 mt-1">"${desc}"</p>
                 `;
                 container.appendChild(card);
@@ -572,35 +605,31 @@
             }
         }
 
-        function gerarEstruturaDadosGrafico(dados, termoColuna, indiceColuna, eMultiplaEscolha = false) {
-            const colAlvo = localizarColunaPorIndiceOuTermo(termoColuna, indiceColuna);
-            const colRegiao = localizarColunaPorIndiceOuTermo("regiao", 1);
-            
+        function gerarEstruturaDadosGrafico(dados, chaveColuna, eMultiplaEscolha = false) {
             const classesRespostas = [];
-            if(colAlvo) {
-                dados.forEach(d => {
-                    const rRaw = d[colAlvo] ? d[colAlvo].trim() : "";
-                    if (rRaw) {
-                        if (eMultiplaEscolha) {
-                            rRaw.split(',').forEach(item => {
-                                const limpo = item.replace(/^"|"$/g, "").trim();
-                                if (limpo && limpo !== "Não informado" && !classesRespostas.includes(limpo)) {
-                                    classesRespostas.push(limpo);
-                                }
-                            });
-                        } else {
-                            const limpoBase = rRaw.replace(/^"|"$/g, "").trim();
-                            if (!classesRespostas.includes(limpoBase)) classesRespostas.push(limpoBase);
-                        }
+            
+            dados.forEach(d => {
+                const rRaw = d[chaveColuna] ? d[chaveColuna].trim() : "";
+                if (rRaw) {
+                    if (eMultiplaEscolha || rRaw.includes(';')) {
+                        rRaw.split(/[;,]/).forEach(item => {
+                            const limpo = item.replace(/^"|"$/g, "").trim();
+                            if (limpo && limpo !== "Não informado" && limpo !== "" && !classesRespostas.includes(limpo)) {
+                                classesRespostas.push(limpo);
+                            }
+                        });
+                    } else {
+                        const limpoBase = rRaw.replace(/^"|"$/g, "").trim();
+                        if (limpoBase && !classesRespostas.includes(limpoBase)) classesRespostas.push(limpoBase);
                     }
-                });
-            }
+                }
+            });
 
             const totaisPorRegiao = {};
             LISTA_REGIOES_ORDENADA.forEach(reg => {
                 totaisPorRegiao[reg] = dados.filter(d => {
-                    const rPlanilha = d[colRegiao];
-                    return rPlanilha && rPlanilha.toLowerCase().trim() === reg.toLowerCase() && d[colAlvo];
+                    const rPlanilha = d["Região"];
+                    return rPlanilha && rPlanilha.toLowerCase().trim() === reg.toLowerCase() && d[chaveColuna];
                 }).length;
             });
 
@@ -610,20 +639,15 @@
                     label: cat,
                     data: LISTA_REGIOES_ORDENADA.map(reg => {
                         const ocorrencias = dados.filter(d => {
-                            const rPlanilha = d[colRegiao];
+                            const rPlanilha = d["Região"];
                             if (!rPlanilha || rPlanilha.toLowerCase().trim() !== reg.toLowerCase()) return false;
                             
-                            const valorCelua = d[colAlvo] || "";
-                            if (eMultiplaEscolha) {
-                                return valorCelua.toLowerCase().includes(cat.toLowerCase());
-                            } else {
-                                return valorCelua.trim() === cat;
-                            }
+                            const valorCelula = d[chaveColuna] || "";
+                            return valorCelula.toLowerCase().includes(cat.toLowerCase());
                         }).length;
 
-                        if (modoVisualizacaoGraficos === 'porcentagem') {
-                            const totalDaRegiao = totaisPorRegiao[reg] || 0;
-                            return totalDaRegiao > 0 ? parseFloat(((ocorrencias / totalDaRegiao) * 100).toFixed(1)) : 0;
+                        if (modoVisualizacaoGraficos === 'porcentagem' && totaisPorRegiao[reg] > 0) {
+                            return parseFloat(((ocorrencias / totaisPorRegiao[reg]) * 100).toFixed(1));
                         }
                         return ocorrencias;
                     }),
@@ -636,18 +660,18 @@
 
         function renderizarTodosGraficos(dados) {
             const configs = [
-                { id: 'chart_quadro', termo: 'quadro de seca', idx: 8, mult: false },
-                { id: 'chart_chuva', termo: 'chuvas ocorridas', idx: 9, mult: false },
-                { id: 'chart_culturas', termo: 'culturas de sequeiro', idx: 11, mult: false },
-                { id: 'chart_afetadas', termo: 'Feijão', idx: 12, mult: true }, 
-                { id: 'chart_hidrico', termo: 'Níveis', idx: 13, mult: false },   
-                { id: 'chart_impactos', termo: 'Abastecimento', idx: 14, mult: true } 
+                { id: 'chart_quadro', col: '1', mult: false },
+                { id: 'chart_chuva', col: '2', mult: false },
+                { id: 'chart_culturas', col: '5', mult: false },
+                { id: 'chart_afetadas', col: '6', mult: true }, 
+                { id: 'chart_hidrico', col: '8', mult: false },   
+                { id: 'chart_impactos', col: '9', mult: true } 
             ];
 
             configs.forEach(cfg => {
                 if (graficosInstanciados[cfg.id]) graficosInstanciados[cfg.id].destroy();
 
-                const estrutura = gerarEstruturaDadosGrafico(dados, cfg.termo, cfg.idx, cfg.mult);
+                const estrutura = gerarEstruturaDadosGrafico(dados, cfg.col, cfg.mult);
                 const sufixoLabel = modoVisualizacaoGraficos === 'porcentagem' ? '%' : ' respostas';
 
                 graficosInstanciados[cfg.id] = new Chart(document.getElementById(cfg.id), {
@@ -683,11 +707,9 @@
                 const graficoRef = graficosInstanciados[idCanvas];
                 if (!graficoRef) return;
 
-                const dateInputInicio = document.getElementById('data_inicio').value;
-                const dateInputFim = document.getElementById('data_fim').value;
-                const dataFormatadaInicio = dateInputInicio ? dateInputInicio.split('-').reverse().join('/') : '';
-                const dataFormatadaFim = dateInputFim ? dateInputFim.split('-').reverse().join('/') : '';
-                const textoPeriodo = `Período da Amostra: ${dataFormatadaInicio} até ${dataFormatadaFim}`;
+                const dateInputInicio = document.getElementById('data_inicio').value.split('-').reverse().join('/');
+                const dateInputFim = document.getElementById('data_fim').value.split('-').reverse().join('/');
+                const textoPeriodo = `Período da Amostra: ${dateInputInicio} até ${dateInputFim}`;
                 const tipoMetrica = modoVisualizacaoGraficos === 'porcentagem' ? ' (Métrica: Proporção %)' : ' (Métrica: Frequência Absoluta)';
 
                 const canvasTemporario = document.createElement('canvas');
@@ -713,25 +735,17 @@
                         indexAxis: 'y',
                         responsive: false,
                         animation: false,
-                        layout: {
-                            padding: { top: 130, bottom: 50, left: 50, right: 50 }
-                        },
+                        layout: { padding: { top: 130, bottom: 50, left: 50, right: 50 } },
                         scales: {
                             x: { 
                                 stacked: true, 
                                 max: modoVisualizacaoGraficos === 'porcentagem' ? 100 : undefined,
                                 ticks: { font: { size: 16, weight: 'bold' }, callback: value => value + (modoVisualizacaoGraficos === 'porcentagem' ? '%' : '') } 
                             },
-                            y: { 
-                                stacked: true, 
-                                ticks: { font: { size: 18, weight: 'bold' } } 
-                            }
+                            y: { stacked: true, ticks: { font: { size: 18, weight: 'bold' } } }
                         },
                         plugins: {
-                            legend: { 
-                                position: 'bottom', 
-                                labels: { font: { size: 13, weight: '700' }, boxWidth: 25 } 
-                            }
+                            legend: { position: 'bottom', labels: { font: { size: 13, weight: '700' }, boxWidth: 25 } }
                         }
                     }
                 });
@@ -835,6 +849,154 @@
             };
             img.src = url;
         });
+
+        let listaGlobalObservadoresCalculados = [];
+
+        function configurarEventosModalObservadores() {
+            const modal = document.getElementById('modal_observadores');
+            const btnAbrir = document.getElementById('btn_modal_obs');
+            const btnFechar = document.getElementById('btn_fechar_modal');
+            const filtroRegiao = document.getElementById('filtro_obs_regiao');
+            const filtroStatus = document.getElementById('filtro_obs_status');
+            const btnExportar = document.getElementById('btn_exportar_excel');
+
+            btnAbrir.addEventListener('click', () => {
+                modal.classList.replace('hidden', 'flex');
+                alimentarFiltroRegioesModal();
+                renderizarLinhasTabelaObservadores();
+            });
+
+            btnFechar.addEventListener('click', () => modal.classList.replace('flex', 'hidden'));
+            filtroRegiao.addEventListener('change', renderizarLinhasTabelaObservadores);
+            filtroStatus.addEventListener('change', renderizarLinhasTabelaObservadores);
+            btnExportar.addEventListener('click', exportarTabelaParaXLSX);
+        }
+
+        function alimentarFiltroRegioesModal() {
+            const select = document.getElementById('filtro_obs_regiao');
+            if (select.children.length > 1) return; 
+            LISTA_REGIOES_ORDENADA.forEach(reg => {
+                const opt = document.createElement('option');
+                opt.value = reg; opt.innerText = reg;
+                select.appendChild(opt);
+            });
+        }
+
+        function construirTabelaObservadores() {
+            if (!dadosPlanilha.length) return;
+
+            const dInicio = new Date(document.getElementById('data_inicio').value + "T00:00:00");
+            const dFim = new Date(document.getElementById('data_fim').value + "T23:59:59");
+
+            const dataBaseHistorica = new Date("2025-10-01T00:00:00");
+            const mapaObservadores = {};
+
+            dadosPlanilha.forEach(l => {
+                const nomeRaw = l["Observador"];
+                if (!nomeRaw || nomeRaw.trim() === "" || nomeRaw.toLowerCase().includes("teste")) return;
+                
+                const nomeChave = nomeRaw.trim();
+                const dataRaw = l["Data/Hora"];
+                if (!dataRaw) return;
+
+                const dReg = extrairDataEHoraBR(dataRaw);
+                if (!dReg || dReg < dataBaseHistorica) return;
+
+                if (!mapaObservadores[nomeChave]) {
+                    mapaObservadores[nomeChave] = {
+                        nome: nomeChave,
+                        regiao: l["Região"] || "Não Informada",
+                        municipio: l["Municipio"] || "Não Informado",
+                        contato: l["Telefone"] || "",
+                        totalHistoricoGeral: 0, 
+                        enviouNoPeriodoFiltro: false 
+                    };
+                }
+
+                mapaObservadores[nomeChave].totalHistoricoGeral++;
+
+                if (dReg >= dInicio && dReg <= dFim) {
+                    mapaObservadores[nomeChave].enviouNoPeriodoFiltro = true;
+                }
+            });
+
+            listaGlobalObservadoresCalculados = Object.values(mapaObservadores).sort((a, b) => b.totalHistoricoGeral - a.totalHistoricoGeral);
+        }
+
+        function renderizarLinhasTabelaObservadores() {
+            const tbody = document.getElementById('lista_observadores_linhas');
+            tbody.innerHTML = '';
+
+            const filtroRegiao = document.getElementById('filtro_obs_regiao').value;
+            const filtroStatus = document.getElementById('filtro_obs_status').value;
+
+            const filtrados = listaGlobalObservadoresCalculados.filter(obs => {
+                if (filtroRegiao && obs.regiao.toLowerCase().trim() !== filtroRegiao.toLowerCase().trim()) return false;
+                if (filtroStatus === 'enviou' && !obs.enviouNoPeriodoFiltro) return false;
+                if (filtroStatus === 'nao_enviou' && obs.enviouNoPeriodoFiltro) return false;
+                return true;
+            });
+
+            filtrados.forEach(obs => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
+                
+                const badgeStatus = obs.enviouNoPeriodoFiltro 
+                    ? `<span class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px]">Enviou no Período</span>`
+                    : `<span class="bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-full text-[10px]">Não Enviou no Período</span>`;
+
+                let linkWhats = "—";
+                if(obs.contato) {
+                    const apenasNumeros = obs.contato.replace(/\D/g, "");
+                    if(apenasNumeros.length >= 8) {
+                        const numCompleto = apenasNumeros.startsWith("55") ? apenasNumeros : "55" + apenasNumeros;
+                        linkWhats = `<a href="https://web.whatsapp.com/send?phone=${numCompleto}" target="_blank" class="text-emerald-600 hover:text-emerald-800 transition-all font-semibold flex items-center justify-center gap-1"><i class="fa-brands fa-whatsapp text-sm"></i> Conversar</a>`;
+                    } else { linkWhats = `<span class="text-slate-400 font-medium">${obs.contato}</span>`; }
+                }
+
+                tr.innerHTML = `
+                    <td class="p-2.5 font-semibold text-slate-700">${obs.nome}</td>
+                    <td class="p-2.5 text-slate-600">${obs.regiao}</td>
+                    <td class="p-2.5 text-slate-600">${obs.municipio}</td>
+                    <td class="p-2.5 text-center">${badgeStatus}</td>
+                    <td class="p-2.5 text-center font-bold text-slate-800">${obs.totalHistoricoGeral}</td>
+                    <td class="p-2.5 text-center">${linkWhats}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if(!filtrados.length) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-400 italic">Nenhum observador mapeado.</td></tr>`;
+            }
+        }
+
+        function exportarTabelaParaXLSX() {
+            if(!listaGlobalObservadoresCalculados.length) return;
+
+            const filtroRegiao = document.getElementById('filtro_obs_regiao').value;
+            const filtroStatus = document.getElementById('filtro_obs_status').value;
+
+            const filtrados = listaGlobalObservadoresCalculados.filter(obs => {
+                if (filtroRegiao && obs.regiao.toLowerCase().trim() !== filtroRegiao.toLowerCase().trim()) return false;
+                if (filtroStatus === 'enviou' && !obs.enviouNoPeriodoFiltro) return false;
+                if (filtroStatus === 'nao_enviou' && obs.enviouNoPeriodoFiltro) return false;
+                return true;
+            });
+
+            const matrizPlanilha = filtrados.map(obs => ({
+                "Nome do Observador": obs.nome,
+                "Região": obs.regiao,
+                "Município Base": obs.municipio,
+                "Status no Intervalo de Filtro": obs.enviouNoPeriodoFiltro ? "Enviou" : "Não Enviou",
+                "Total de Informes (Histórico Geral)": obs.totalHistoricoGeral,
+                "Contato Informado": obs.contato
+            }));
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(matrizPlanilha);
+            XLSX.utils.book_append_sheet(wb, ws, "Controle de Observadores");
+            XLSX.writeFile(wb, `ENGAJAMENTO_OBSERVADORES.xlsx`);
+        }
 
         document.getElementById('btn_filtrar').addEventListener('click', processarEFiltrarPainel);
         window.onload = inicializarPortal;
