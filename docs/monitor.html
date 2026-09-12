@@ -107,21 +107,25 @@
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6 items-stretch">
             <div class="lg:col-span-7 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-2">
-                    <div>
-                        <h3 class="font-bold text-slate-900 text-xs">Frequência de Relatos por Município</h3>
-                        <p class="text-[10px] text-slate-400">Distribuição espacial baseada nas respostas validadas.</p>
+                    <div class="flex items-center gap-2">
+                        <button id="btn_mapa_prev" class="text-slate-400 hover:text-emerald-700 hover:bg-slate-100 p-1 rounded-full transition-all cursor-pointer" title="Pergunta Anterior">
+                            <i class="fa-solid fa-chevron-left text-sm"></i>
+                        </button>
+                        <div>
+                            <h3 id="mapa_titulo" class="font-bold text-slate-900 text-xs">Frequência de Relatos por Município</h3>
+                            <p id="mapa_subtitulo" class="text-[10px] text-slate-400">Distribuição espacial baseada nas respostas validadas.</p>
+                        </div>
+                        <button id="btn_mapa_next" class="text-slate-400 hover:text-emerald-700 hover:bg-slate-100 p-1 rounded-full transition-all cursor-pointer" title="Próxima Pergunta">
+                            <i class="fa-solid fa-chevron-right text-sm"></i>
+                        </button>
                     </div>
                     <button id="btn_download_mapa" class="text-slate-400 hover:text-slate-700 p-1 text-xs cursor-pointer transition-all" title="Exportar PNG">
                         <i class="fa-solid fa-download text-sm"></i>
                     </button>
                 </div>
 
-                <div class="flex flex-wrap items-center gap-2 text-[9px] font-semibold text-slate-600 bg-slate-50 p-1.5 rounded mb-2 border border-slate-100">
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-white border border-black block"></span> Sem relatos</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#FFE0B2] border border-black block"></span> 1 relato</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#FFB74D] border border-black block"></span> 2-3 relatos</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#F57C00] border border-black block"></span> 4-5 relatos</span>
-                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#D84315] border border-black block"></span> &gt; 5 relatos</span>
+                <div id="mapa_legenda_container" class="flex flex-wrap items-center justify-center gap-2 text-[9px] font-semibold text-slate-600 bg-slate-50 p-1.5 rounded mb-2 border border-slate-100">
+                    <!-- Legenda renderizada dinamicamente -->
                 </div>
 
                 <div id="map-container" class="w-full h-[380px] flex items-center justify-center border border-slate-100 overflow-hidden bg-slate-50 rounded-lg relative flex-1">
@@ -279,6 +283,43 @@
         let graficosInstanciados = {};
         let modoVisualizacaoGraficos = 'absoluto';
 
+        // --- ESTRUTURA PARA NAVEGAÇÃO ESPACIAL DOS MAPAS (SEM CULTIVOS DE SEQUEIRO) ---
+        const VIEWS_MAPA = [
+            {
+                id: 'relatos',
+                titulo: 'Frequência de Relatos por Município',
+                subtitulo: 'Distribuição espacial baseada nas respostas validadas.',
+                tipo: 'frequencia',
+                coluna: null
+            },
+            {
+                id: 'quadro_seca',
+                titulo: 'Evolução do Quadro de Seca',
+                subtitulo: 'Predominância de resposta por município (P1).',
+                tipo: 'resposta_predominante',
+                coluna: '1'
+            },
+            {
+                id: 'chuvas',
+                titulo: 'Avaliação das Chuvas Ocorridas',
+                subtitulo: 'Predominância de resposta por município (P2).',
+                tipo: 'resposta_predominante',
+                coluna: '2'
+            },
+            {
+                id: 'reservatorios',
+                titulo: 'Estado de Nível dos Reservatórios',
+                subtitulo: 'Predominância de resposta por município (P8).',
+                tipo: 'resposta_predominante',
+                coluna: '8'
+            }
+        ];
+
+        let indiceViewMapaAtual = 0;
+        let contagemMunicipiosCache = {};
+        let dadosFiltradosCache = [];
+        let legendaExportacaoAtual = [];
+
         function normalizar(txt) {
             if (!txt) return "";
             return txt.toString().toUpperCase()
@@ -393,11 +434,27 @@
 
                 configurarAlternadorModo();
                 configurarEventosModalObservadores();
+                configurarNavegacaoMapa();
                 
                 processarEFiltrarPainel();
             } catch (err) {
                 console.error("Erro crítico na inicialização: ", err);
             }
+        }
+
+        function configurarNavegacaoMapa() {
+            const btnPrev = document.getElementById('btn_mapa_prev');
+            const btnNext = document.getElementById('btn_mapa_next');
+
+            btnPrev.addEventListener('click', () => {
+                indiceViewMapaAtual = (indiceViewMapaAtual - 1 + VIEWS_MAPA.length) % VIEWS_MAPA.length;
+                renderizarMapa(contagemMunicipiosCache);
+            });
+
+            btnNext.addEventListener('click', () => {
+                indiceViewMapaAtual = (indiceViewMapaAtual + 1) % VIEWS_MAPA.length;
+                renderizarMapa(contagemMunicipiosCache);
+            });
         }
 
         function configurarAlternadorModo() {
@@ -476,6 +533,8 @@
                 return dReg && dReg >= dInicioTendencia && dReg <= dFimTendencia;
             });
 
+            dadosFiltradosCache = dadosFiltrados;
+
             const contagemMunicipios = {};
             dadosFiltrados.forEach(l => {
                 const m = l["Municipio"];
@@ -484,6 +543,8 @@
                     contagemMunicipios[norm] = (contagemMunicipios[norm] || 0) + 1;
                 }
             });
+
+            contagemMunicipiosCache = contagemMunicipios;
 
             document.getElementById('card_total').innerText = dadosFiltrados.length;
             document.getElementById('card_mun').innerText = Object.keys(contagemMunicipios).length;
@@ -496,11 +557,69 @@
         }
 
         function renderizarMapa(contagem) {
+            const viewAtual = VIEWS_MAPA[indiceViewMapaAtual];
+            document.getElementById('mapa_titulo').innerText = viewAtual.titulo;
+            document.getElementById('mapa_subtitulo').innerText = viewAtual.subtitulo;
+
             const svg = document.getElementById('svg-map');
             svg.innerHTML = '';
             if (!geojsonMapData) return;
 
             const tooltip = document.getElementById('tooltip');
+            const containerLegenda = document.getElementById('mapa_legenda_container');
+            containerLegenda.innerHTML = '';
+            legendaExportacaoAtual = [];
+
+            const paletaCoresPerguntas = ['#ea580c', '#f59e0b', '#2563eb', '#16a34a', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6'];
+            
+            let mapaRespostasPorMun = {};
+            let mapaCoresCategorias = {};
+
+            if (viewAtual.tipo === 'frequencia') {
+                legendaExportacaoAtual = [
+                    { label: 'Sem relatos', color: '#ffffff' },
+                    { label: '1 relato', color: '#FFE0B2' },
+                    { label: '2-3 relatos', color: '#FFB74D' },
+                    { label: '4-5 relatos', color: '#F57C00' },
+                    { label: '> 5 relatos', color: '#D84315' }
+                ];
+
+                containerLegenda.innerHTML = `
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-white border border-black block"></span> Sem relatos</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#FFE0B2] border border-black block"></span> 1 relato</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#FFB74D] border border-black block"></span> 2-3 relatos</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#F57C00] border border-black block"></span> 4-5 relatos</span>
+                    <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-[#D84315] border border-black block"></span> &gt; 5 relatos</span>
+                `;
+            } else {
+                const col = viewAtual.coluna;
+                const todasCategorias = [];
+
+                dadosFiltradosCache.forEach(l => {
+                    const m = l["Municipio"];
+                    const val = l[col] ? l[col].replace(/^"|"$/g, "").trim() : "";
+                    if (m && val) {
+                        const norm = normalizar(m);
+                        if (!mapaRespostasPorMun[norm]) mapaRespostasPorMun[norm] = {};
+                        mapaRespostasPorMun[norm][val] = (mapaRespostasPorMun[norm][val] || 0) + 1;
+                        if (!todasCategorias.includes(val)) todasCategorias.push(val);
+                    }
+                });
+
+                todasCategorias.forEach((cat, idx) => {
+                    mapaCoresCategorias[cat] = paletaCoresPerguntas[idx % paletaCoresPerguntas.length];
+                });
+
+                legendaExportacaoAtual.push({ label: 'Sem dados', color: '#ffffff' });
+                let htmlLegenda = `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 bg-white border border-black block"></span> Sem dados</span>`;
+                
+                todasCategorias.forEach(cat => {
+                    const cor = mapaCoresCategorias[cat];
+                    legendaExportacaoAtual.push({ label: cat, color: cor });
+                    htmlLegenda += `<span class="flex items-center gap-1"><span class="w-2.5 h-2.5 border border-black block" style="background-color: ${cor};"></span> ${cat}</span>`;
+                });
+                containerLegenda.innerHTML = htmlLegenda;
+            }
 
             geojsonMapData.features.forEach(feature => {
                 const props = feature.properties || {};
@@ -509,10 +628,30 @@
                 const totalRelatos = contagem[nomeNorm] || 0;
 
                 let cor = "#ffffff";
-                if (totalRelatos > 0) {
-                    cor = totalRelatos > 5 ? "#D84315" :
-                          totalRelatos > 3 ? "#F57C00" :
-                          totalRelatos > 1 ? "#FFB74D" : "#FFE0B2";
+                let textoTooltip = `<strong>${nomeMun}</strong><br><span class="text-amber-400 font-bold">${totalRelatos} relatos validados</span>`;
+
+                if (viewAtual.tipo === 'frequencia') {
+                    if (totalRelatos > 0) {
+                        cor = totalRelatos > 5 ? "#D84315" :
+                              totalRelatos > 3 ? "#F57C00" :
+                              totalRelatos > 1 ? "#FFB74D" : "#FFE0B2";
+                    }
+                } else {
+                    const respMun = mapaRespostasPorMun[nomeNorm];
+                    if (respMun) {
+                        let catMaisVotada = "";
+                        let maxVotos = 0;
+                        Object.keys(respMun).forEach(cat => {
+                            if (respMun[cat] > maxVotos) {
+                                maxVotos = respMun[cat];
+                                catMaisVotada = cat;
+                            }
+                        });
+                        if (catMaisVotada) {
+                            cor = mapaCoresCategorias[catMaisVotada] || "#ffffff";
+                            textoTooltip = `<strong>${nomeMun}</strong><br><span class="text-emerald-400 font-bold">Predominante: ${catMaisVotada}</span><br><span class="text-slate-300 text-[10px]">${maxVotos} de ${totalRelatos} relatos</span>`;
+                        }
+                    }
                 }
 
                 let dPath = "";
@@ -553,7 +692,7 @@
                     tooltip.style.display = "block";
                     tooltip.style.left = (e.clientX + 15) + "px";
                     tooltip.style.top = (e.clientY + 15) + "px";
-                    tooltip.innerHTML = `<strong>${nomeMun}</strong><br><span class="text-amber-400 font-bold">${totalRelatos} relatos validados</span>`;
+                    tooltip.innerHTML = textoTooltip;
                 });
 
                 path.addEventListener("mouseleave", () => { tooltip.style.display = "none"; });
@@ -769,6 +908,8 @@
 
         document.getElementById('btn_download_mapa').addEventListener('click', () => {
             const svgOriginal = document.getElementById('svg-map');
+            const viewAtual = VIEWS_MAPA[indiceViewMapaAtual];
+
             const dataIniInput = document.getElementById('data_inicio').value;
             const dataFimInput = document.getElementById('data_fim').value;
             
@@ -804,31 +945,53 @@
                 }
             });
 
+            // --- ALGORITMO MULTILINHA COM CENTRALIZAÇÃO INDIVIDUAL POR LINHA ---
+            let linhasDeLegenda = [];
+            let linhaAtual = [];
+            let larguraLinhaAtual = 0;
+
+            legendaExportacaoAtual.forEach(item => {
+                const wItem = (item.label.length * 6.5) + 32;
+                if (larguraLinhaAtual + wItem > 770 && linhaAtual.length > 0) {
+                    linhasDeLegenda.push({ itens: linhaAtual, largura: larguraLinhaAtual });
+                    linhaAtual = [];
+                    larguraLinhaAtual = 0;
+                }
+                linhaAtual.push({ ...item, width: wItem });
+                larguraLinhaAtual += wItem;
+            });
+            if (linhaAtual.length > 0) {
+                linhasDeLegenda.push({ itens: linhaAtual, largura: larguraLinhaAtual });
+            }
+
+            let tagsLegendaSVG = "";
+            let posY = 540;
+
+            linhasDeLegenda.forEach(linha => {
+                let posX = (850 - linha.largura) / 2;
+                linha.itens.forEach(item => {
+                    tagsLegendaSVG += `
+                        <g transform="translate(${posX}, ${posY})">
+                            <rect x="0" y="0" width="13" height="13" fill="${item.color}" stroke="#000000" stroke-width="1"/>
+                            <text x="18" y="10.5" font-size="10.5px" font-weight="bold" fill="#334155">${item.label}</text>
+                        </g>`;
+                    posX += item.width;
+                });
+                posY += 22;
+            });
+
             let svgCompletoExportacao = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="${wReal}" height="${hReal}" viewBox="0 0 850 600" style="background:#ffffff; font-family:'Inter', sans-serif;">
-                <text x="425" y="45" font-size="20px" font-weight="bold" fill="#0f172a" text-anchor="middle">Frequência de Relatos por Município</text>
+            <svg xmlns="http://www.w3.org/2000/svg" width="${wReal}" height="${hReal}" viewBox="0 0 850 620" style="background:#ffffff; font-family:'Inter', sans-serif;">
+                <text x="425" y="45" font-size="20px" font-weight="bold" fill="#0f172a" text-anchor="middle">${viewAtual.titulo}</text>
                 <text x="425" y="70" font-size="12px" font-weight="600" fill="#64748b" text-anchor="middle">${textoPeriodo}</text>
                 
-                <g transform="translate(0, 70)">
+                <g transform="translate(0, 60)">
                     ${conteudoPaths}
                     ${tagsNomesMunicipios}
                 </g>
 
-                <g transform="translate(185, 545)" font-size="11px" font-weight="bold" fill="#334155">
-                    <rect x="0" y="0" width="15" height="15" fill="#ffffff" stroke="#000000" stroke-width="1"/>
-                    <text x="22" y="12">Sem relatos</text>
-
-                    <rect x="110" y="0" width="15" height="15" fill="#FFE0B2" stroke="#000000" stroke-width="1"/>
-                    <text x="132" y="12">1 relato</text>
-
-                    <rect x="210" y="0" width="15" height="15" fill="#FFB74D" stroke="#000000" stroke-width="1"/>
-                    <text x="232" y="12">2-3 relatos</text>
-
-                    <rect x="320" y="0" width="15" height="15" fill="#F57C00" stroke="#000000" stroke-width="1"/>
-                    <text x="342" y="12">4-5 relatos</text>
-
-                    <rect x="430" y="0" width="15" height="15" fill="#D84315" stroke="#000000" stroke-width="1"/>
-                    <text x="452" y="12">&gt; 5 relatos</text>
+                <g>
+                    ${tagsLegendaSVG}
                 </g>
             </svg>`;
 
@@ -843,7 +1006,7 @@
                 
                 const link = document.createElement('a');
                 link.href = canvas.toDataURL('image/png', 1.0);
-                link.download = 'relatorio_mapa_monitor_pb.png';
+                link.download = `mapa_${viewAtual.id}.png`;
                 link.click();
                 URL.revokeObjectURL(url);
             };
