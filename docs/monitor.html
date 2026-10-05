@@ -56,24 +56,38 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 mb-4">
             
-            <!-- CONTAINER DE FILTRO ADAPTADO EXCLUSIVAMENTE PARA PERÍODO -->
-            <div class="lg:col-span-6 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 h-14">
+            <!-- CONTAINER DE FILTRO COM MODO MENSAL (PADRÃO) OU PERSONALIZADO -->
+            <div class="lg:col-span-6 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-2 h-14">
                 <div class="flex items-center gap-1.5 shrink-0">
-                    <i class="fa-solid fa-calendar-days text-emerald-600 text-xs"></i>
-                    <span class="font-bold text-[10px] text-slate-700 uppercase tracking-wider">Período</span>
+                    <!-- Alternador de Modo de Filtro -->
+                    <div class="bg-slate-100 p-0.5 rounded-md flex items-center border border-slate-200">
+                        <button id="btn_modo_mensal" class="px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all bg-white text-emerald-800 shadow-xs">
+                            Mensal
+                        </button>
+                        <button id="btn_modo_custom" class="px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all text-slate-500 hover:text-slate-800">
+                            Personalizado
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Inputs do Modo Período Fixo -->
-                <div id="container_periodo" class="flex items-center gap-2 flex-1 min-w-0">
-                    <input type="date" id="data_inicio" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
+                <!-- Inputs do Modo Mensal (Mês e Ano - Padrão Visível) -->
+                <div id="container_periodo_mensal" class="flex items-center gap-1.5 flex-1 min-w-0">
+                    <select id="select_mes_ano" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-bold">
+                        <!-- Opções preenchidas dinamicamente a partir de Outubro/2025 até o mês anterior concluído -->
+                    </select>
+                </div>
+
+                <!-- Inputs do Modo Personalizado (Intervalo de Datas - Oculto Inicialmente) -->
+                <div id="container_periodo_custom" class="hidden flex items-center gap-1.5 flex-1 min-w-0">
+                    <input type="date" id="data_inicio" class="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
                     <span class="text-slate-400 text-xs shrink-0">à</span>
-                    <input type="date" id="data_fim" class="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
+                    <input type="date" id="data_fim" class="w-full bg-slate-50 border border-slate-200 rounded px-1.5 py-1 text-xs text-slate-700 focus:outline-emerald-600 font-medium">
                 </div>
 
                 <button id="btn_filtrar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1 rounded transition-all cursor-pointer shadow-sm shrink-0">
                     Filtrar
                 </button>
-                <button id="btn_modal_obs" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-3 py-1 rounded transition-all cursor-pointer shadow-sm shrink-0 flex items-center gap-1">
+                <button id="btn_modal_obs" class="bg-slate-700 hover:bg-slate-800 text-white font-bold text-xs px-2.5 py-1 rounded transition-all cursor-pointer shadow-sm shrink-0 flex items-center gap-1">
                     <i class="fa-solid fa-users text-[11px]"></i> Observadores
                 </button>
             </div>
@@ -278,12 +292,61 @@
         const GEOJSON_URL = "https://raw.githubusercontent.com/EdivanS96/Meteorologia/main/MONITOR/DATA/municipios_pb.geojson";
         const LISTA_REGIOES_ORDENADA = ["Litoral", "Brejo", "Agreste", "Cariri", "Curimataú", "Sertão", "Alto Sertão"];
 
+        const LISTA_MESES = [
+            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+        ];
+
         let dadosPlanilha = [];
         let geojsonMapData = null;
         let graficosInstanciados = {};
         let modoVisualizacaoGraficos = 'absoluto';
+        let modoFiltroPeriodo = 'mensal'; // 'mensal' é o padrão
 
-        // --- ESTRUTURA PARA NAVEGAÇÃO ESPACIAL DOS MAPAS (SEM CULTIVOS DE SEQUEIRO) ---
+        // Mapeamento semântico de cores por tipo de resposta
+        const MAPA_CORES_SEMANTICAS = {
+            "sem dados": "#ffffff",
+            "nao tenho essa informacao": "#ffffff",
+            "não tenho essa informação": "#ffffff",
+            
+            "houve melhora": "#16a34a",            
+            "nao houve alteracao": "#f59e0b",      
+            "não houve alteração": "#f59e0b",      
+            "houve piora": "#dc2626",              
+            "nao ha seca": "#2563eb",              
+            "não há seca": "#2563eb",              
+
+            "muita chuva": "#1d4ed8",              
+            "pouca chuva": "#f59e0b",              
+            "nao choveu": "#b91c1c",               
+            "não choveu": "#b91c1c",               
+
+            "niveis acima da normalidade": "#1d4ed8", 
+            "níveis acima da normalidade": "#1d4ed8",
+            "niveis normais": "#0284c7",              
+            "níveis normais": "#0284c7",
+            "niveis decrescentes (estao baixando)": "#f59e0b", 
+            "níveis decrescentes (estão baixando)": "#f59e0b",
+            "niveis baixos": "#ea580c",               
+            "níveis baixos": "#ea580c",
+            "niveis criticamente baixos": "#dc2626",   
+            "níveis criticamente baixos": "#dc2626",
+            "sistemas hidricos em colapso": "#881337", 
+            "sistemas hídricos em colapso": "#881337"
+        };
+
+        function obterCorSemantica(texto, indexPadrao = 0) {
+            if (!texto) return "#ffffff";
+            const textoNorm = texto.trim().toLowerCase();
+            
+            if (MAPA_CORES_SEMANTICAS[textoNorm]) {
+                return MAPA_CORES_SEMANTICAS[textoNorm];
+            }
+            
+            const paletaReserva = ['#ea580c', '#f59e0b', '#2563eb', '#16a34a', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6', '#06b6d4', '#f43f5e'];
+            return paletaReserva[indexPadrao % paletaReserva.length];
+        }
+
         const VIEWS_MAPA = [
             {
                 id: 'relatos',
@@ -413,6 +476,40 @@
             return { x: x, y: y, str: `${x.toFixed(1)},${y.toFixed(1)}` };
         }
 
+        function popularSeletorMeses() {
+            const select = document.getElementById('select_mes_ano');
+            select.innerHTML = '';
+
+            const anoInicial = 2025;
+            const mesInicial = 9; // Outubro/2025 (0-indexed)
+            
+            const hoje = new Date();
+            
+            // O mês atual só é liberado a partir do dia 1 do mês subsequente
+            // Exemplo: se hoje é 05/10/2026, o limite de análise encerrada é Setembro/2026 (Mês 8)
+            const dataLimiteAnalisavel = new Date(hoje.getFullYear(), hoje.getMonth(), 0); 
+            const anoLimite = dataLimiteAnalisavel.getFullYear();
+            const mesLimite = dataLimiteAnalisavel.getMonth();
+
+            for (let ano = anoInicial; ano <= anoLimite; ano++) {
+                const mesStart = (ano === anoInicial) ? mesInicial : 0;
+                const mesEnd = (ano === anoLimite) ? mesLimite : 11;
+
+                for (let mes = mesStart; mes <= mesEnd; mes++) {
+                    const nomeMes = LISTA_MESES[mes];
+                    const opt = document.createElement('option');
+                    opt.value = `${nomeMes}_${ano}`;
+                    opt.innerText = `${nomeMes} de ${ano}`;
+                    select.appendChild(opt);
+                }
+            }
+
+            // Seleciona automaticamente o mês mais recente disponível (ex: Setembro)
+            if (select.options.length > 0) {
+                select.selectedIndex = select.options.length - 1;
+            }
+        }
+
         async function inicializarPortal() {
             try {
                 const [resCsv, resGeojson] = await Promise.all([
@@ -422,7 +519,7 @@
                 dadosPlanilha = parsearCSV(resCsv);
                 geojsonMapData = resGeojson;
 
-                // Configura inputs do modo período padrão
+                // Configura datas no modo personalizado
                 const hoje = new Date();
                 const trintaDiasAtras = new Date();
                 trintaDiasAtras.setDate(hoje.getDate() - 30);
@@ -432,7 +529,9 @@
                 document.getElementById('data_inicio').value = formatarDataInput(trintaDiasAtras);
                 document.getElementById('data_fim').value = formatarDataInput(hoje);
 
-                configurarAlternadorModo();
+                popularSeletorMeses();
+                configurarAlternadorModoFiltro();
+                configurarAlternadorModoGraficos();
                 configurarEventosModalObservadores();
                 configurarNavegacaoMapa();
                 
@@ -440,6 +539,33 @@
             } catch (err) {
                 console.error("Erro crítico na inicialização: ", err);
             }
+        }
+
+        function configurarAlternadorModoFiltro() {
+            const btnCustom = document.getElementById('btn_modo_custom');
+            const btnMensal = document.getElementById('btn_modo_mensal');
+            const containerCustom = document.getElementById('container_periodo_custom');
+            const containerMensal = document.getElementById('container_periodo_mensal');
+
+            btnCustom.addEventListener('click', () => {
+                modoFiltroPeriodo = 'custom';
+                btnCustom.className = "px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all bg-white text-emerald-800 shadow-xs";
+                btnMensal.className = "px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all text-slate-500 hover:text-slate-800";
+                containerCustom.classList.remove('hidden');
+                containerCustom.classList.add('flex');
+                containerMensal.classList.remove('flex');
+                containerMensal.classList.add('hidden');
+            });
+
+            btnMensal.addEventListener('click', () => {
+                modoFiltroPeriodo = 'mensal';
+                btnMensal.className = "px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all bg-white text-emerald-800 shadow-xs";
+                btnCustom.className = "px-2 py-0.5 text-[10px] font-bold rounded cursor-pointer transition-all text-slate-500 hover:text-slate-800";
+                containerMensal.classList.remove('hidden');
+                containerMensal.classList.add('flex');
+                containerCustom.classList.remove('flex');
+                containerCustom.classList.add('hidden');
+            });
         }
 
         function configurarNavegacaoMapa() {
@@ -457,7 +583,7 @@
             });
         }
 
-        function configurarAlternadorModo() {
+        function configurarAlternadorModoGraficos() {
             const btnAbs = document.getElementById('mode_abs');
             const btnPct = document.getElementById('mode_pct');
 
@@ -474,6 +600,39 @@
                 btnAbs.className = "px-2.5 py-1 text-[11px] font-bold rounded-md cursor-pointer transition-all text-slate-500 hover:text-slate-800";
                 processarEFiltrarPainel();
             });
+        }
+
+        function obterIntervaloDatasFiltro() {
+            if (modoFiltroPeriodo === 'custom') {
+                const dateInputInicio = document.getElementById('data_inicio').value;
+                const dateInputFim = document.getElementById('data_fim').value;
+
+                if (!dateInputInicio || !dateInputFim) return null;
+
+                return {
+                    inicio: new Date(dateInputInicio + "T00:00:00"),
+                    fim: new Date(dateInputFim + "T23:59:59"),
+                    label: `${dateInputInicio.split('-').reverse().join('/')} até ${dateInputFim.split('-').reverse().join('/')}`
+                };
+            } else {
+                const val = document.getElementById('select_mes_ano').value;
+                if (!val) return null;
+
+                const [nomeMes, anoStr] = val.split('_');
+                const indexMes = LISTA_MESES.indexOf(nomeMes);
+                const ano = parseInt(anoStr, 10);
+
+                const inicio = new Date(ano, indexMes, 1, 0, 0, 0);
+                const fim = new Date(ano, indexMes + 1, 0, 23, 59, 59);
+
+                return {
+                    inicio: inicio,
+                    fim: fim,
+                    mes: nomeMes,
+                    ano: anoStr,
+                    label: `${nomeMes} de ${anoStr}`
+                };
+            }
         }
 
         function calcularTendencia(dadosAtuais, dInicio, dFim) {
@@ -516,22 +675,36 @@
         }
 
         function processarEFiltrarPainel() {
+            const infoFiltro = obterIntervaloDatasFiltro();
+            if (!infoFiltro) return;
+
             let dadosFiltrados = [];
-            
-            const dateInputInicio = document.getElementById('data_inicio').value;
-            const dateInputFim = document.getElementById('data_fim').value;
 
-            if(!dateInputInicio || !dateInputFim) return;
+            if (modoFiltroPeriodo === 'mensal') {
+                // Filtro direto combinando coluna F (Mês) e coluna G (Ano) da planilha
+                dadosFiltrados = dadosPlanilha.filter(l => {
+                    const mesLinha = l["Mês"] || l["Mes"] || l["F"] || "";
+                    const anoLinha = l["Ano"] || l["G"] || "";
 
-            const dInicioTendencia = new Date(dateInputInicio + "T00:00:00");
-            const dFimTendencia = new Date(dateInputFim + "T23:59:59");
+                    const mesMatch = mesLinha.toString().trim().toLowerCase() === infoFiltro.mes.toLowerCase();
+                    const anoMatch = anoLinha.toString().trim() === infoFiltro.ano;
 
-            dadosFiltrados = dadosPlanilha.filter(l => {
-                const dataRaw = l["Data/Hora"];
-                if (!dataRaw) return false;
-                const dReg = extrairDataEHoraBR(dataRaw);
-                return dReg && dReg >= dInicioTendencia && dReg <= dFimTendencia;
-            });
+                    if (mesLinha && anoLinha) {
+                        return mesMatch && anoMatch;
+                    }
+
+                    // Fallback para caso F/G estejam em colunas genéricas ou usando Data/Hora
+                    const dReg = extrairDataEHoraBR(l["Data/Hora"]);
+                    return dReg && dReg >= infoFiltro.inicio && dReg <= infoFiltro.fim;
+                });
+            } else {
+                dadosFiltrados = dadosPlanilha.filter(l => {
+                    const dataRaw = l["Data/Hora"];
+                    if (!dataRaw) return false;
+                    const dReg = extrairDataEHoraBR(dataRaw);
+                    return dReg && dReg >= infoFiltro.inicio && dReg <= infoFiltro.fim;
+                });
+            }
 
             dadosFiltradosCache = dadosFiltrados;
 
@@ -549,7 +722,7 @@
             document.getElementById('card_total').innerText = dadosFiltrados.length;
             document.getElementById('card_mun').innerText = Object.keys(contagemMunicipios).length;
 
-            calcularTendencia(dadosFiltrados, dInicioTendencia, dFimTendencia);
+            calcularTendencia(dadosFiltrados, infoFiltro.inicio, infoFiltro.fim);
             renderizarMapa(contagemMunicipios);
             atualizarFeedRelatos(dadosFiltrados);
             renderizarTodosGraficos(dadosFiltrados);
@@ -570,8 +743,6 @@
             containerLegenda.innerHTML = '';
             legendaExportacaoAtual = [];
 
-            const paletaCoresPerguntas = ['#ea580c', '#f59e0b', '#2563eb', '#16a34a', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6'];
-            
             let mapaRespostasPorMun = {};
             let mapaCoresCategorias = {};
 
@@ -607,7 +778,7 @@
                 });
 
                 todasCategorias.forEach((cat, idx) => {
-                    mapaCoresCategorias[cat] = paletaCoresPerguntas[idx % paletaCoresPerguntas.length];
+                    mapaCoresCategorias[cat] = obterCorSemantica(cat, idx);
                 });
 
                 legendaExportacaoAtual.push({ label: 'Sem dados', color: '#ffffff' });
@@ -773,7 +944,6 @@
             });
 
             const datasets = classesRespostas.map((cat, i) => {
-                const paletaCores = ['#ea580c', '#f59e0b', '#2563eb', '#16a34a', '#8b5cf6', '#64748b', '#ec4899', '#14b8a6', '#06b6d4', '#f43f5e'];
                 return {
                     label: cat,
                     data: LISTA_REGIOES_ORDENADA.map(reg => {
@@ -790,7 +960,7 @@
                         }
                         return ocorrencias;
                     }),
-                    backgroundColor: paletaCores[i % paletaCores.length]
+                    backgroundColor: obterCorSemantica(cat, i)
                 };
             });
 
@@ -846,9 +1016,8 @@
                 const graficoRef = graficosInstanciados[idCanvas];
                 if (!graficoRef) return;
 
-                const dateInputInicio = document.getElementById('data_inicio').value.split('-').reverse().join('/');
-                const dateInputFim = document.getElementById('data_fim').value.split('-').reverse().join('/');
-                const textoPeriodo = `Período da Amostra: ${dateInputInicio} até ${dateInputFim}`;
+                const infoFiltro = obterIntervaloDatasFiltro();
+                const textoPeriodo = infoFiltro ? `Período da Amostra: ${infoFiltro.label}` : '';
                 const tipoMetrica = modoVisualizacaoGraficos === 'porcentagem' ? ' (Métrica: Proporção %)' : ' (Métrica: Frequência Absoluta)';
 
                 const canvasTemporario = document.createElement('canvas');
@@ -910,12 +1079,8 @@
             const svgOriginal = document.getElementById('svg-map');
             const viewAtual = VIEWS_MAPA[indiceViewMapaAtual];
 
-            const dataIniInput = document.getElementById('data_inicio').value;
-            const dataFimInput = document.getElementById('data_fim').value;
-            
-            const dataFormatadaInicio = dataIniInput ? dataIniInput.split('-').reverse().join('/') : '';
-            const dataFormatadaFim = dataFimInput ? dataFimInput.split('-').reverse().join('/') : '';
-            const textoPeriodo = `Período de Monitoramento: ${dataFormatadaInicio} até ${dataFormatadaFim}`;
+            const infoFiltro = obterIntervaloDatasFiltro();
+            const textoPeriodo = infoFiltro ? `Período de Monitoramento: ${infoFiltro.label}` : '';
 
             const wReal = 1200; 
             const hReal = 850; 
@@ -945,7 +1110,6 @@
                 }
             });
 
-            // --- ALGORITMO MULTILINHA COM CENTRALIZAÇÃO INDIVIDUAL POR LINHA ---
             let linhasDeLegenda = [];
             let linhaAtual = [];
             let larguraLinhaAtual = 0;
@@ -1048,8 +1212,8 @@
         function construirTabelaObservadores() {
             if (!dadosPlanilha.length) return;
 
-            const dInicio = new Date(document.getElementById('data_inicio').value + "T00:00:00");
-            const dFim = new Date(document.getElementById('data_fim').value + "T23:59:59");
+            const infoFiltro = obterIntervaloDatasFiltro();
+            if (!infoFiltro) return;
 
             const dataBaseHistorica = new Date("2025-10-01T00:00:00");
             const mapaObservadores = {};
@@ -1078,8 +1242,21 @@
 
                 mapaObservadores[nomeChave].totalHistoricoGeral++;
 
-                if (dReg >= dInicio && dReg <= dFim) {
-                    mapaObservadores[nomeChave].enviouNoPeriodoFiltro = true;
+                if (modoFiltroPeriodo === 'mensal') {
+                    const mesLinha = l["Mês"] || l["Mes"] || l["F"] || "";
+                    const anoLinha = l["Ano"] || l["G"] || "";
+                    if (mesLinha && anoLinha) {
+                        if (mesLinha.toString().trim().toLowerCase() === infoFiltro.mes.toLowerCase() &&
+                            anoLinha.toString().trim() === infoFiltro.ano) {
+                            mapaObservadores[nomeChave].enviouNoPeriodoFiltro = true;
+                        }
+                    } else if (dReg >= infoFiltro.inicio && dReg <= infoFiltro.fim) {
+                        mapaObservadores[nomeChave].enviouNoPeriodoFiltro = true;
+                    }
+                } else {
+                    if (dReg >= infoFiltro.inicio && dReg <= infoFiltro.fim) {
+                        mapaObservadores[nomeChave].enviouNoPeriodoFiltro = true;
+                    }
                 }
             });
 
